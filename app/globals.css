@@ -9,6 +9,8 @@
 body {
   background-color: #faf7f2;
   color: #211e1a;
+  /* full-bleed sections use w-screen breakouts; clip the scrollbar-width overhang */
+  overflow-x: clip;
 }
 
 /* Article typography - hand-rolled, sanitized subset only */

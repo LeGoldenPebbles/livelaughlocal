@@ -10,8 +10,9 @@ export default async function AdSlot({ placement, index = 0 }) {
   const ad = await pickHouseAd(placement, index);
 
   if (placement === 'sidebar') {
+    // 336px takes every high-value display size (300x600, 336x280, 300x250).
     return (
-      <div className="hidden h-[600px] w-[300px] shrink-0 lg:block">
+      <div className="hidden h-[600px] w-[336px] shrink-0 lg:block">
         {ad && <HouseAdUnit ad={ad} layout="tower" />}
       </div>
     );

@@ -173,7 +173,7 @@ export default async function ArticlePage({ params }) {
         </article>
       </div>
 
-      <aside className="hidden w-[300px] shrink-0 lg:block">
+      <aside className="hidden w-[336px] shrink-0 lg:block">
         <div className="sticky top-28 space-y-8">
           <AdSlot placement="sidebar" />
           <MostRead articles={mostRead} />

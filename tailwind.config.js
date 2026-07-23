@@ -31,7 +31,7 @@ module.exports = {
       },
       maxWidth: {
         feed: '44rem',
-        site: '72rem',
+        site: '80rem',
         article: '42rem',
       },
     },

@@ -61,7 +61,7 @@ export default async function CategoryPage({ params }) {
           </div>
         </div>
 
-        <aside className="hidden w-[300px] shrink-0 xl:block">
+        <aside className="hidden w-[336px] shrink-0 xl:block">
           <div className="sticky top-28 space-y-8">
             <AdSlot placement="sidebar" />
             <MostRead articles={mostRead} title={`Most read in ${cat.name}`} />

@@ -22,7 +22,13 @@ export default async function HomePage() {
 
   return (
     <div>
-      <div className="flex items-end justify-between gap-4 border-b border-line pb-5">
+      {hero && <HeroArticle article={hero} />}
+
+      <div
+        className={`flex flex-wrap items-end justify-between gap-4 border-b border-line pb-5 ${
+          hero ? 'mt-8 sm:mt-10' : ''
+        }`}
+      >
         <div>
           <h1 className="font-display text-2xl leading-tight sm:text-3xl">
             {SITE.tagline}
@@ -46,10 +52,7 @@ export default async function HomePage() {
         <div className="min-w-0 flex-1">
           {hero ? (
             <>
-              <HeroArticle article={hero} />
-              <div className="mt-6">
-                <NearMe regions={regions} />
-              </div>
+              <NearMe regions={regions} />
               <section className="mt-10" aria-labelledby="latest-heading">
                 <h2 id="latest-heading" className="font-display text-2xl">
                   Latest
@@ -79,7 +82,7 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <aside className="hidden w-[300px] shrink-0 xl:block">
+        <aside className="hidden w-[336px] shrink-0 xl:block">
           <div className="sticky top-28 space-y-8">
             <AdSlot placement="sidebar" />
             <MostRead articles={mostRead} />
