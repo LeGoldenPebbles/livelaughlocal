@@ -6,9 +6,7 @@ import { getArticle, getRelated, getMostRead } from '@/lib/articles';
 import MostRead from '@/components/MostRead';
 import ArticleBody from '@/components/ArticleBody';
 import ArticleCard from '@/components/ArticleCard';
-import EventPromoCard from '@/components/EventPromoCard';
 import PvBeacon from '@/components/PvBeacon';
-import AdSlot from '@/components/ads/AdSlot';
 
 export const revalidate = 300;
 
@@ -151,8 +149,6 @@ export default async function ArticlePage({ params }) {
             </ul>
           )}
 
-          <EventPromoCard ids={doc.sourceEventIds} />
-
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -175,7 +171,6 @@ export default async function ArticlePage({ params }) {
 
       <aside className="hidden w-[336px] shrink-0 lg:block">
         <div className="sticky top-28 space-y-8">
-          <AdSlot placement="sidebar" />
           <MostRead articles={mostRead} />
         </div>
       </aside>

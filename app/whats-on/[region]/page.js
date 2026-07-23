@@ -2,7 +2,6 @@ import { Fragment } from 'react';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { fetchEventsByRegion } from '@/lib/spEvents';
-import AdSlot from '@/components/ads/AdSlot';
 
 export const revalidate = 1800;
 
@@ -139,7 +138,6 @@ export default async function RegionPage({ params }) {
         {region.events.map((event, i) => (
           <Fragment key={event.id}>
             <EventRow event={event} />
-            {i === 3 && <AdSlot placement="in-article" index={0} />}
           </Fragment>
         ))}
       </div>

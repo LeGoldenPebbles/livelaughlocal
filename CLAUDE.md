@@ -60,9 +60,13 @@ scripts/        seed + generator
    ol, li, blockquote, figure, img, figcaption, br) via `lib/sanitize.js`.
    Everything renders through it. Paid articles get `rel="sponsored nofollow"`
    on links (selling followed links = Google penalty).
-2. **Ad slots reserve fixed heights** (CLS = 0 is a launch requirement). Rules
-   live in `lib/adConfig.js`: in-article after block 3 then every 5 (max 3);
-   in-feed at position 4 then every 7. In-feed sponsored cards are labelled.
+2. **Display advertising = AdSense Auto ads (owner decision, 23 Jul 2026).**
+   House creatives are retired from render and Google positions display ads
+   itself (including desktop side rails in the viewport margins). The
+   reserved-slot system (components/ads/, lib/adConfig.js, lib/houseAds.js)
+   is kept in the repo for a possible return to manual units - do not delete
+   it. Paid featured articles STILL render as labelled sponsored cards in the
+   feed via FeedWithAds (that is the £100 product, not display inventory).
 3. **Cookie posture.** Analytics is the cookieless PageView beacon. The
    adsbygoogle script loads when NEXT_PUBLIC_ADSENSE_CLIENT is set (pub id
    ca-pub-1573259509891705; ads.txt in public/) - initially for AdSense site

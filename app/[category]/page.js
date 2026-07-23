@@ -3,7 +3,6 @@ import { CATEGORY_SLUGS, getCategory } from '@/lib/constants';
 import { getFeed, getFeaturedArticles, getMostRead } from '@/lib/articles';
 import FeedWithAds from '@/components/FeedWithAds';
 import MostRead from '@/components/MostRead';
-import AdSlot from '@/components/ads/AdSlot';
 
 export const revalidate = 300;
 
@@ -63,7 +62,6 @@ export default async function CategoryPage({ params }) {
 
         <aside className="hidden w-[336px] shrink-0 xl:block">
           <div className="sticky top-28 space-y-8">
-            <AdSlot placement="sidebar" />
             <MostRead articles={mostRead} title={`Most read in ${cat.name}`} />
           </div>
         </aside>

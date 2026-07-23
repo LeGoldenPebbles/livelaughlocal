@@ -1,12 +1,11 @@
 import ArticleCard from './ArticleCard';
-import AdSlot from './ads/AdSlot';
 import SponsoredFeedCard from './ads/SponsoredFeedCard';
 import { AD_RULES } from '@/lib/adConfig';
 
-// The feed grid with in-feed slots injected at position `first`, then every
-// `every` cards (lib/adConfig.js). A slot is filled by a paid featured article
-// when one is available, otherwise a house creative. Everything renders
-// server-side into grid cells, so there is no client-side ad pop-in and no CLS.
+// The feed grid. Paid featured articles (the £100 product) still occupy
+// labelled sponsored cards at the configured positions; house creatives are
+// retired from render and display advertising is delegated to AdSense Auto
+// ads (owner decision, 23 Jul 2026).
 export default function FeedWithAds({ articles, featured = [] }) {
   const items = [];
   let sinceSlot = 0;
@@ -19,16 +18,14 @@ export default function FeedWithAds({ articles, featured = [] }) {
     const threshold = slotCount === 0 ? AD_RULES.inFeed.first : AD_RULES.inFeed.every;
     if (sinceSlot === threshold) {
       const feat = featured[featIdx];
-      items.push(
-        <div key={`slot-${slotCount}`} className="h-full">
-          {feat ? (
+      if (feat) {
+        items.push(
+          <div key={`slot-${slotCount}`} className="h-full">
             <SponsoredFeedCard article={feat} />
-          ) : (
-            <AdSlot placement="in-feed" index={slotCount} />
-          )}
-        </div>
-      );
-      if (feat) featIdx += 1;
+          </div>
+        );
+        featIdx += 1;
+      }
       slotCount += 1;
       sinceSlot = 0;
     }
