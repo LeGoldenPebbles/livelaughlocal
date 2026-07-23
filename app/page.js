@@ -35,7 +35,7 @@ export default async function HomePage() {
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-ink-soft">{SITE.description}</p>
         </div>
-        <nav aria-label="Categories" className="hidden flex-wrap justify-end gap-2 md:flex">
+        <nav aria-label="Categories" className="flex flex-wrap gap-2 md:justify-end">
           {CATEGORIES.map((c) => (
             <Link
               key={c.slug}

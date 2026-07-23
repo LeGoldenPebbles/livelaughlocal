@@ -2,39 +2,36 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getCategory } from '@/lib/constants';
 
-// Full-bleed lead story: the band runs edge to edge of the viewport (breaking
-// out of the page container), image bleeding from the left and darkening
-// towards the right, with the title, dek and Read more over the dark side.
-// Text stays aligned to the site grid via the inner max-w-site container.
-// On mobile the gradient rotates to bottom-up and text anchors to the base.
+// Full-bleed lead story on a black band: the image takes the left ~60% and
+// fades into black; the title, dek and Read more sit in white on the right.
+// On mobile the image stacks on top, fading into black at its base, with the
+// text below. The band runs edge to edge; content is capped for huge screens.
 export default function HeroArticle({ article }) {
   if (!article) return null;
   const img = article.heroImage?.url;
   const cat = getCategory(article.category);
 
   return (
-    <section className="relative left-1/2 -mt-8 w-screen -translate-x-1/2 sm:-mt-10">
-      <Link
-        href={`/${article.category}/${article.slug}`}
-        className="group relative block min-h-[480px] overflow-hidden bg-ink sm:min-h-[440px] lg:min-h-[520px]"
-      >
-        {img ? (
-          <Image
-            src={img}
-            alt={article.heroImage?.alt || article.title}
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-sage to-ink" />
-        )}
+    <section className="relative left-1/2 -mt-8 w-screen -translate-x-1/2 bg-black sm:-mt-10">
+      <Link href={`/${article.category}/${article.slug}`} className="group block">
+        <div className="mx-auto flex max-w-[96rem] flex-col sm:h-[420px] sm:flex-row lg:h-[500px]">
+          <div className="relative aspect-[16/10] w-full sm:aspect-auto sm:h-full sm:w-[60%]">
+            {img ? (
+              <Image
+                src={img}
+                alt={article.heroImage?.alt || article.title}
+                fill
+                priority
+                sizes="(max-width: 640px) 100vw, 60vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-sage to-ink" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent from-60% to-black sm:bg-gradient-to-r sm:from-transparent sm:from-50% sm:to-black" />
+          </div>
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10 sm:bg-gradient-to-r sm:from-transparent sm:via-black/40 sm:to-black/85" />
-
-        <div className="relative z-10 mx-auto flex min-h-[480px] max-w-site flex-col justify-end px-4 py-8 sm:min-h-[440px] sm:justify-center sm:px-6 lg:min-h-[520px]">
-          <div className="sm:ml-auto sm:w-[55%] sm:pl-8 lg:w-1/2">
+          <div className="relative flex w-full flex-col justify-center px-4 pb-10 pt-2 sm:w-[40%] sm:py-10 sm:pl-2 sm:pr-8 lg:pr-12">
             <div className="flex flex-wrap items-center gap-2">
               {cat && (
                 <span className="rounded-full bg-coral px-3 py-1 text-xs font-medium uppercase tracking-wide text-white">
@@ -42,15 +39,15 @@ export default function HeroArticle({ article }) {
                 </span>
               )}
               {article.locations?.[0] && (
-                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white/90 backdrop-blur-sm">
+                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white/90">
                   {article.locations[0]}
                 </span>
               )}
             </div>
-            <h2 className="mt-4 font-display text-3xl leading-tight text-white sm:text-4xl lg:text-5xl">
+            <h2 className="mt-4 font-display text-3xl leading-tight text-white sm:text-4xl lg:text-[2.75rem] lg:leading-[1.15]">
               {article.title}
             </h2>
-            <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/85 line-clamp-3 sm:text-base lg:text-lg">
+            <p className="mt-4 text-sm leading-relaxed text-white/80 line-clamp-3 sm:text-base">
               {article.dek}
             </p>
             <span className="mt-6 inline-flex w-fit items-center rounded-full bg-coral px-6 py-3 text-sm font-medium text-white transition-colors group-hover:bg-coral-deep">
