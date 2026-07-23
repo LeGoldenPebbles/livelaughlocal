@@ -3,7 +3,7 @@ services:
     name: livelaughlocal
     runtime: node
     plan: starter
-    region: frankfurt
+    region: oregon
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /
