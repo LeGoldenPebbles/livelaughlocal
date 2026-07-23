@@ -2,7 +2,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { getCategory, SITE } from '@/lib/constants';
-import { getArticle, getRelated } from '@/lib/articles';
+import { getArticle, getRelated, getMostRead } from '@/lib/articles';
+import MostRead from '@/components/MostRead';
 import ArticleBody from '@/components/ArticleBody';
 import ArticleCard from '@/components/ArticleCard';
 import EventPromoCard from '@/components/EventPromoCard';
@@ -20,6 +21,7 @@ export async function generateMetadata({ params }) {
   return {
     title,
     description,
+    ...(doc.tags?.length ? { keywords: doc.tags } : {}),
     openGraph: {
       title,
       description,
@@ -35,7 +37,10 @@ export default async function ArticlePage({ params }) {
   if (!doc || doc.category !== category) notFound();
 
   const cat = getCategory(category);
-  const related = await getRelated(doc, 3);
+  const [related, mostRead] = await Promise.all([
+    getRelated(doc, 3),
+    getMostRead({ limit: 5 }),
+  ]);
 
   const published = doc.publishedAt
     ? new Date(doc.publishedAt).toLocaleDateString('en-GB', {
@@ -133,6 +138,19 @@ export default async function ArticlePage({ params }) {
             </p>
           )}
 
+          {doc.tags?.length > 0 && (
+            <ul className="mt-8 flex flex-wrap gap-2" aria-label="Topics">
+              {doc.tags.map((t) => (
+                <li
+                  key={t}
+                  className="rounded-full border border-line bg-white px-3 py-1 text-xs text-ink-soft"
+                >
+                  {t}
+                </li>
+              ))}
+            </ul>
+          )}
+
           <EventPromoCard ids={doc.sourceEventIds} />
 
           <script
@@ -156,8 +174,9 @@ export default async function ArticlePage({ params }) {
       </div>
 
       <aside className="hidden w-[300px] shrink-0 lg:block">
-        <div className="sticky top-28">
+        <div className="sticky top-28 space-y-8">
           <AdSlot placement="sidebar" />
+          <MostRead articles={mostRead} />
         </div>
       </aside>
     </div>

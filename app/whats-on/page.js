@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { fetchEventsByRegion } from '@/lib/spEvents';
+import { fetchEventsByRegion, fetchRegionIndex } from '@/lib/spEvents';
+import NearMe from '@/components/NearMe';
 
 export const revalidate = 1800;
 
@@ -51,7 +52,10 @@ function Thumb({ event }) {
 }
 
 export default async function WhatsOnPage() {
-  const regions = await fetchEventsByRegion();
+  const [regions, regionIndex] = await Promise.all([
+    fetchEventsByRegion(),
+    fetchRegionIndex(),
+  ]);
 
   const upSoon = regions
     .flatMap((region) =>
@@ -75,6 +79,10 @@ export default async function WhatsOnPage() {
           Built from live listings on Spaces Please - updated all the time.
         </p>
       </header>
+
+      <div className="mt-6 max-w-2xl">
+        <NearMe regions={regionIndex} />
+      </div>
 
       {regions.length === 0 ? (
         <div className="mt-10 max-w-article rounded-xl border border-line bg-white/60 p-8 text-center">
