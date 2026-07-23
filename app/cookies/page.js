@@ -3,7 +3,7 @@ import { SITE } from '@/lib/constants';
 
 export const metadata = {
   title: 'Cookies',
-  description: `${SITE.name} sets no third-party cookies. Here is the whole story, and it is a short one.`,
+  description: `${SITE.name} sets no third-party cookies today. Here is the whole story, and it is a short one.`,
 };
 
 export default function CookiesPage() {
@@ -14,14 +14,14 @@ export default function CookiesPage() {
           Cookies
         </h1>
         <p className="mt-3 text-lg leading-relaxed text-ink-soft">
-          The short version: we set no third-party cookies. Here is the long
-          version, which is also short.
+          The short version: today we set no third-party cookies. Here is the
+          long version, which is also short.
         </p>
       </header>
 
       <div className="mt-8 space-y-4 leading-relaxed text-ink-soft">
         <p>
-          Live Laugh Local does not set any third-party cookies. No advertising
+          Today, Live Laugh Local sets no third-party cookies. No advertising
           cookies, no social media pixels, no tracking scripts from anyone else.
         </p>
         <p>
@@ -37,9 +37,12 @@ export default function CookiesPage() {
           with no identifiers, no profiles and no personal data attached.
         </p>
         <p>
-          If we ever introduce advertising cookies in future, a consent banner
-          will ask for your permission first, before anything is set. That is a
-          commitment, not a maybe.
+          One change is coming: we are introducing adverts served by Google
+          AdSense. When advertising cookies arrive with them, a consent banner
+          run through a Google-certified consent management platform will ask
+          for your permission first, before anything is set, and this page will
+          be updated to list exactly which cookies they are. Until you see that
+          banner, nothing has changed.
         </p>
         <p>
           Questions about any of this are welcome at{' '}

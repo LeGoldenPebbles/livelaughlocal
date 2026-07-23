@@ -422,6 +422,10 @@ export default function SubmitForm() {
           />
           <span className="text-sm leading-relaxed text-ink-soft">
             I confirm I have the rights to this content and any images, and I accept the{' '}
+            <a href="/terms" className="text-coral-deep underline underline-offset-2">
+              terms of use
+            </a>{' '}
+            and{' '}
             <a href="/privacy" className="text-coral-deep underline underline-offset-2">
               privacy policy
             </a>

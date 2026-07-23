@@ -39,6 +39,7 @@ export default function SiteFooter() {
               <li><Link href="/submit" className="hover:text-coral-deep">Submit a story</Link></li>
               <li><Link href="/about" className="hover:text-coral-deep">About</Link></li>
               <li><Link href="/contact" className="hover:text-coral-deep">Contact</Link></li>
+              <li><Link href="/terms" className="hover:text-coral-deep">Terms</Link></li>
               <li><Link href="/privacy" className="hover:text-coral-deep">Privacy</Link></li>
               <li><Link href="/cookies" className="hover:text-coral-deep">Cookies</Link></li>
               <li><Link href="/remove" className="hover:text-coral-deep">Remove an article</Link></li>

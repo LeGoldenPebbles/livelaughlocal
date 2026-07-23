@@ -63,9 +63,15 @@ scripts/        seed + generator
 2. **Ad slots reserve fixed heights** (CLS = 0 is a launch requirement). Rules
    live in `lib/adConfig.js`: in-article after block 3 then every 5 (max 3);
    in-feed at position 4 then every 7. In-feed sponsored cards are labelled.
-3. **Zero third-party cookies at launch.** House ads only; analytics is the
-   cookieless PageView beacon. AdSense is phase 2 and requires a certified CMP
-   FIRST. Do not add any third-party script casually.
+3. **Cookie posture.** Analytics is the cookieless PageView beacon. The
+   adsbygoogle script loads when NEXT_PUBLIC_ADSENSE_CLIENT is set (pub id
+   ca-pub-1573259509891705; ads.txt in public/) - initially for AdSense site
+   verification. Personalised ads must NOT serve to UK/EEA visitors until the
+   Google Privacy & messaging consent message is configured in the AdSense
+   account (certified CMP - Google enforces this). House ads are the default
+   slot fill and remain the fallback for unfilled inventory; never delete
+   them. Auto ads stay OFF - manual units in AdSlot's reserved containers
+   only (CLS discipline). Do not add any other third-party script casually.
 4. **`NOINDEX=true` until livelaughlocal.co.uk is attached** - never let Google
    index a temporary domain.
 5. **Removal/confirm links are stateless HMAC tokens** (`lib/tokens.js`),

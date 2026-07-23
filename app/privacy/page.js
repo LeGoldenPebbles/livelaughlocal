@@ -26,7 +26,8 @@ export default function PrivacyPage() {
         <p>
           Live Laugh Local is operated by{' '}
           <strong className="font-medium text-ink">Spaces Please Ltd</strong>{' '}
-          (registered in England and Wales, company number 16518769), which is
+          (registered in England and Wales, company number 16518769, registered
+          office 7 Elm Close, Kings Cliffe, PE8 6WX, United Kingdom), which is
           the data controller for any personal data handled on this site. You
           can reach us about anything in this policy at{' '}
           <a
@@ -34,7 +35,15 @@ export default function PrivacyPage() {
             className="font-medium text-coral-deep underline underline-offset-2 hover:text-coral"
           >
             hello@livelaughlocal.co.uk
-          </a>
+          </a>{' '}
+          or by post to that address. The rules for using the site itself live
+          in our{' '}
+          <Link
+            href="/terms"
+            className="font-medium text-coral-deep underline underline-offset-2 hover:text-coral"
+          >
+            terms of use
+          </Link>
           .
         </p>
 
@@ -77,6 +86,41 @@ export default function PrivacyPage() {
           only emails we send are the ones you trigger: submission
           confirmations, removal links, receipts, and approval or rejection
           notices.
+        </p>
+
+        <h2 className="pt-4 font-display text-2xl font-semibold text-ink">
+          Who helps us run the site
+        </h2>
+        <p>
+          A small number of service providers process data on our behalf, under
+          contracts that limit what they can do with it:
+        </p>
+        <ul className="list-disc space-y-2 pl-5">
+          <li>
+            <strong className="font-medium text-ink">Stripe</strong> - processes
+            payments for Featured placements. Your card details go to Stripe
+            directly and never touch our servers.
+          </li>
+          <li>
+            <strong className="font-medium text-ink">Cloudflare</strong> - sits
+            in front of the site as our content delivery network and security
+            layer, and stores uploaded images.
+          </li>
+          <li>
+            <strong className="font-medium text-ink">Render</strong> - hosts the
+            site and its database infrastructure.
+          </li>
+          <li>
+            <strong className="font-medium text-ink">Google</strong> - only once
+            advertising goes live. We are introducing Google AdSense adverts;
+            any advertising cookies or identifiers will be governed by a consent
+            banner that asks your permission first. Until you see that banner,
+            Google receives nothing from your visits here.
+          </li>
+        </ul>
+        <p>
+          We do not sell personal data, and we do not share it with anyone else
+          except where the law requires it.
         </p>
 
         <h2 className="pt-4 font-display text-2xl font-semibold text-ink">
@@ -143,8 +187,11 @@ export default function PrivacyPage() {
           Cookies
         </h2>
         <p>
-          We set no third-party cookies. The full detail, all three paragraphs
-          of it, is on our{' '}
+          Today we set no third-party cookies at all - the only cookie on the
+          site is the essential admin login cookie, and our analytics is
+          cookieless. When AdSense advertising arrives, advertising cookies will
+          only be set after you say yes to a consent banner. The full detail is
+          on our{' '}
           <Link
             href="/cookies"
             className="font-medium text-coral-deep underline underline-offset-2 hover:text-coral"
@@ -152,6 +199,10 @@ export default function PrivacyPage() {
             cookies page
           </Link>
           .
+        </p>
+
+        <p className="border-t border-line pt-4 text-sm text-ink-faint">
+          Last updated: 23 July 2026
         </p>
       </div>
     </article>

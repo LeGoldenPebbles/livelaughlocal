@@ -2,6 +2,7 @@ import { Fraunces, Inter } from 'next/font/google';
 import './globals.css';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
+import AdSenseLoader from '@/components/AdSenseLoader';
 import { SITE } from '@/lib/constants';
 
 const fraunces = Fraunces({
@@ -50,6 +51,7 @@ export default function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
         />
+        <AdSenseLoader />
       </body>
     </html>
   );
