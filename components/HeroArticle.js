@@ -15,7 +15,7 @@ export default function HeroArticle({ article }) {
     <section className="relative left-1/2 -mt-8 w-screen -translate-x-1/2 bg-black sm:-mt-10">
       <Link href={`/${article.category}/${article.slug}`} className="group block">
         <div className="mx-auto flex max-w-[96rem] flex-col sm:h-[420px] sm:flex-row lg:h-[500px]">
-          <div className="relative aspect-[16/10] w-full sm:aspect-auto sm:h-full sm:w-[60%]">
+          <div className="relative aspect-[16/10] w-full overflow-hidden sm:aspect-auto sm:h-full sm:w-[60%]">
             {img ? (
               <Image
                 src={img}
@@ -23,7 +23,7 @@ export default function HeroArticle({ article }) {
                 fill
                 priority
                 sizes="(max-width: 640px) 100vw, 60vw"
-                className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                className="object-cover"
               />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-br from-sage to-ink" />
