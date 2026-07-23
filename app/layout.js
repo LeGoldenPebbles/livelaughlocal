@@ -28,6 +28,12 @@ export const metadata = {
     siteName: SITE.name,
     type: 'website',
   },
+  // Server-rendered into the raw <head> so Google's AdSense verifier can see
+  // it - the adsbygoogle script itself is injected post-hydration by
+  // AdSenseLoader, which the verification crawler cannot observe.
+  ...(process.env.NEXT_PUBLIC_ADSENSE_CLIENT
+    ? { other: { 'google-adsense-account': process.env.NEXT_PUBLIC_ADSENSE_CLIENT } }
+    : {}),
 };
 
 const orgJsonLd = {
