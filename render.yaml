@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: livelaughlocal
+    runtime: node
+    plan: starter
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 22.13.0
+      - key: NOINDEX
+        value: "true"
+      - key: SITE_URL
+        value: https://livelaughlocal.co.uk
+      - key: SP_EVENTS_API
+        value: https://eventwebsite-rups.onrender.com
+      # Set these in the dashboard (never in git):
+      - key: MONGODB_URI
+        sync: false
+      - key: ADMIN_KEY
+        sync: false
+      - key: TOKEN_SECRET
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: R2_PUBLIC_HOST
+        sync: false
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
