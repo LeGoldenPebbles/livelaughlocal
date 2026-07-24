@@ -149,6 +149,17 @@ export default async function ArticlePage({ params }) {
             </ul>
           )}
 
+          <p className="mt-10 border-t border-line pt-4 text-xs text-ink-faint">
+            Event information on Live Laugh Local comes from live listings on{' '}
+            <a
+              href="https://spacesplease.com?utm_source=livelaughlocal&utm_medium=article_footer"
+              className="underline decoration-line underline-offset-2 transition-colors hover:text-coral-deep"
+            >
+              Spaces Please
+            </a>
+            .
+          </p>
+
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

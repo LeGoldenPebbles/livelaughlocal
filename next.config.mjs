@@ -6,6 +6,7 @@ const nextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'imagedelivery.net' },
       { protocol: 'https', hostname: '**.r2.dev' },
+      { protocol: 'https', hostname: 'spacesplease.com' },
       ...(process.env.R2_PUBLIC_HOST
         ? [{ protocol: 'https', hostname: process.env.R2_PUBLIC_HOST }]
         : []),
