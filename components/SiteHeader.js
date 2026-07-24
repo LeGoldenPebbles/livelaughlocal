@@ -1,19 +1,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { CATEGORIES } from '@/lib/constants';
+import { getActiveCategories } from '@/lib/articles';
+import NewsMenu from '@/components/NewsMenu';
 
-function NavLink({ href, children }) {
-  return (
-    <Link
-      href={href}
-      className="rounded-full px-3 py-1.5 text-ink-soft transition-colors hover:bg-coral-tint hover:text-ink"
-    >
-      {children}
-    </Link>
-  );
-}
+export default async function SiteHeader() {
+  const categories = await getActiveCategories();
 
-export default function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur">
       <div className="mx-auto max-w-site px-4 sm:px-6">
@@ -35,15 +27,7 @@ export default function SiteHeader() {
             Submit a story
           </Link>
         </div>
-        <nav className="-mx-4 flex gap-1 overflow-x-auto whitespace-nowrap px-4 pb-3 text-sm sm:mx-0 sm:px-0">
-          <NavLink href="/">Latest</NavLink>
-          {CATEGORIES.map((c) => (
-            <NavLink key={c.slug} href={`/${c.slug}`}>
-              {c.name}
-            </NavLink>
-          ))}
-          <NavLink href="/whats-on">What&apos;s on</NavLink>
-        </nav>
+        <NewsMenu categories={categories} />
       </div>
     </header>
   );

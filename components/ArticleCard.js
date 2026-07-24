@@ -30,11 +30,19 @@ export default function ArticleCard({ article, priority = false }) {
             <span className="font-display text-6xl text-coral">*</span>
           </div>
         )}
-        {article.featured?.active && (
+        {article.category === 'breaking-news' ? (
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-coral px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-white">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+            </span>
+            Breaking
+          </span>
+        ) : article.featured?.active ? (
           <span className="absolute left-3 top-3 rounded-full bg-coral px-2.5 py-1 text-xs font-medium text-white">
             Featured
           </span>
-        )}
+        ) : null}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs uppercase tracking-wide text-ink-faint">
         {cat && <span className="font-medium text-coral-deep">{cat.name}</span>}

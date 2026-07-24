@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { getCategory, SITE } from '@/lib/constants';
 import { getArticle, getRelated, getMostRead } from '@/lib/articles';
 import MostRead from '@/components/MostRead';
@@ -32,7 +32,12 @@ export async function generateMetadata({ params }) {
 export default async function ArticlePage({ params }) {
   const { category, slug } = await params;
   const doc = await getArticle(slug);
-  if (!doc || doc.category !== category) notFound();
+  if (!doc) notFound();
+  // Articles can be re-shelved: the slug is globally unique, so an old
+  // category URL 301s to the article's current home instead of 404ing.
+  if (doc.category !== category) {
+    permanentRedirect(`/${doc.category}/${slug}`);
+  }
 
   const cat = getCategory(category);
   const [related, mostRead] = await Promise.all([
@@ -73,14 +78,25 @@ export default async function ArticlePage({ params }) {
     <div className="flex gap-10">
       <div className="min-w-0 flex-1">
         <article className="mx-auto max-w-article">
-          {cat && (
+          {cat && category === 'breaking-news' ? (
+            <Link
+              href={`/${category}`}
+              className="inline-flex items-center gap-2 rounded-full bg-coral px-3 py-1 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:bg-coral-deep"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+              </span>
+              Breaking
+            </Link>
+          ) : cat ? (
             <Link
               href={`/${category}`}
               className="inline-block rounded-full bg-coral-tint px-3 py-1 text-xs font-medium uppercase tracking-wide text-coral-deep transition-colors hover:bg-coral hover:text-white"
             >
               {cat.name}
             </Link>
-          )}
+          ) : null}
 
           <h1 className="mt-4 font-display text-3xl leading-tight sm:text-4xl">
             {doc.title}

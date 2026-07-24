@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import { getFeed, getFeaturedArticles, getMostRead } from '@/lib/articles';
+import { getFeed, getFeaturedArticles, getMostRead, getActiveCategories } from '@/lib/articles';
 import { fetchRegionIndex } from '@/lib/spEvents';
-import { CATEGORIES, SITE } from '@/lib/constants';
+import { SITE } from '@/lib/constants';
 import FeedWithAds from '@/components/FeedWithAds';
 import HeroArticle from '@/components/HeroArticle';
 import MostRead from '@/components/MostRead';
@@ -10,11 +10,12 @@ import NearMe from '@/components/NearMe';
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const [articles, featured, mostRead, regions] = await Promise.all([
+  const [articles, featured, mostRead, regions, activeCategories] = await Promise.all([
     getFeed({ limit: 25 }),
     getFeaturedArticles(),
     getMostRead({ limit: 5 }),
     fetchRegionIndex(),
+    getActiveCategories(),
   ]);
 
   const [hero, ...rest] = articles;
@@ -35,7 +36,7 @@ export default async function HomePage() {
           <p className="mt-1 max-w-2xl text-sm text-ink-soft">{SITE.description}</p>
         </div>
         <nav aria-label="Categories" className="flex flex-wrap gap-2 md:justify-end">
-          {CATEGORIES.map((c) => (
+          {activeCategories.slice(0, 8).map((c) => (
             <Link
               key={c.slug}
               href={`/${c.slug}`}

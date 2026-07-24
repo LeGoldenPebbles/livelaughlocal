@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { CATEGORIES, SITE } from '@/lib/constants';
+import { SITE } from '@/lib/constants';
+import { getActiveCategories } from '@/lib/articles';
 
-export default function SiteFooter() {
+export default async function SiteFooter() {
+  const categories = await getActiveCategories();
   return (
     <footer className="mt-16 border-t border-line bg-white/40">
       <div className="mx-auto max-w-site px-4 py-10 sm:px-6">
@@ -22,7 +24,7 @@ export default function SiteFooter() {
               Reading
             </p>
             <ul className="mt-3 space-y-2 text-sm">
-              {CATEGORIES.map((c) => (
+              {categories.map((c) => (
                 <li key={c.slug}>
                   <Link href={`/${c.slug}`} className="hover:text-coral-deep">
                     {c.name}

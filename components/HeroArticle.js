@@ -33,11 +33,19 @@ export default function HeroArticle({ article }) {
 
           <div className="relative flex w-full flex-col justify-center px-4 pb-10 pt-2 sm:w-[40%] sm:py-10 sm:pl-2 sm:pr-8 lg:pr-12">
             <div className="flex flex-wrap items-center gap-2">
-              {cat && (
+              {cat && article.category === 'breaking-news' ? (
+                <span className="inline-flex items-center gap-2 rounded-full bg-coral px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+                  </span>
+                  Breaking
+                </span>
+              ) : cat ? (
                 <span className="rounded-full bg-coral px-3 py-1 text-xs font-medium uppercase tracking-wide text-white">
                   {cat.name}
                 </span>
-              )}
+              ) : null}
               {article.locations?.[0] && (
                 <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white/90">
                   {article.locations[0]}

@@ -1,14 +1,18 @@
-import { SITE, CATEGORY_SLUGS } from '@/lib/constants';
-import { getAllPublishedSlugs } from '@/lib/articles';
+import { SITE } from '@/lib/constants';
+import { getAllPublishedSlugs, getActiveCategories } from '@/lib/articles';
 import { fetchEventsByRegion } from '@/lib/spEvents';
 
 export default async function sitemap() {
   const base = SITE.url;
 
+  // Only categories that actually hold published articles - empty shelves
+  // never enter the sitemap.
+  const activeCategories = await getActiveCategories();
+
   const entries = [
     { url: base, changeFrequency: 'daily', priority: 1 },
-    ...CATEGORY_SLUGS.map((slug) => ({
-      url: `${base}/${slug}`,
+    ...activeCategories.map((c) => ({
+      url: `${base}/${c.slug}`,
       changeFrequency: 'daily',
       priority: 0.8,
     })),
