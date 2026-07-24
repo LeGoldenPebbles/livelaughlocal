@@ -10,12 +10,21 @@ import PvBeacon from '@/components/PvBeacon';
 
 export const revalidate = 300;
 
+// House graphics live under /news in public/ and are stored as relative URLs -
+// absolutise them for anything leaving the site (og, JSON-LD).
+const absoluteHero = (doc) => {
+  const url = doc.heroImage && doc.heroImage.url;
+  if (!url) return null;
+  return url.startsWith('/') ? `${SITE.url}${url}` : url;
+};
+
 export async function generateMetadata({ params }) {
   const { category, slug } = await params;
   const doc = await getArticle(slug);
   if (!doc || doc.category !== category) return {};
   const title = doc.seo?.metaTitle || doc.title;
   const description = doc.seo?.metaDesc || doc.dek;
+  const heroUrl = absoluteHero(doc);
   return {
     title,
     description,
@@ -24,7 +33,7 @@ export async function generateMetadata({ params }) {
       title,
       description,
       type: 'article',
-      ...(doc.heroImage?.url ? { images: [doc.heroImage.url] } : {}),
+      ...(heroUrl ? { images: [heroUrl] } : {}),
     },
   };
 }
@@ -69,7 +78,7 @@ export default async function ArticlePage({ params }) {
             name: doc.byline?.name || 'Live Laugh Local team',
           }
         : { '@type': 'Person', name: doc.byline?.name || 'Contributor' },
-    ...(doc.heroImage?.url ? { image: [doc.heroImage.url] } : {}),
+    ...(absoluteHero(doc) ? { image: [absoluteHero(doc)] } : {}),
     publisher: { '@type': 'Organization', name: SITE.name },
     mainEntityOfPage: `${SITE.url}/${category}/${slug}`,
   };

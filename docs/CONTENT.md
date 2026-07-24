@@ -74,9 +74,18 @@ Allowed hero sources, in order of preference:
    licence, source (e.g. "Image: Stephen and Helen Jones, WOMAD 2023 at
    Charlton Park, CC BY-SA 2.0, via Wikimedia Commons"). Prefer wide scene
    shots; avoid close-ups of identifiable private individuals.
-3. **Owner-supplied art** (brand assets, generated images).
+3. **House graphics** - when no photo exists (breaking/tech/abstract stories),
+   generate a branded editorial graphic instead: SVG rendered to a 1600x900
+   PNG with sharp, ink background + paper/coral motif, saved under
+   `public/news/` and referenced with a RELATIVE url (`/news/....png`).
+   The article template absolutises relative heroes for og/JSON-LD.
+   Credit: "Graphic: Live Laugh Local". First example:
+   `public/news/cloudflare-outage-2026-07-24.png`.
+4. **Owner-supplied art** (brand assets, generated images).
 
 Never: news-wire photos, press shots, anything scraped without a licence.
+Remember the deploy-order rule below applies to house graphics too - the PNG
+must be deployed before the article's heroImage points at it.
 
 Articles without a hero are fine - the branded site card covers social shares.
 
