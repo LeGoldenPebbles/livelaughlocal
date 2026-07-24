@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { SITE } from '@/lib/constants';
+import ContactForm from '@/components/ContactForm';
 
 export const metadata = {
   title: 'Contact',
@@ -14,18 +15,22 @@ export default function ContactPage() {
           Contact us
         </h1>
         <p className="mt-3 text-lg leading-relaxed text-ink-soft">
-          One inbox, read by a person. No forms, no ticket numbers.
+          One inbox, read by a person. No ticket numbers.
         </p>
       </header>
 
-      <div className="mt-8 space-y-4 leading-relaxed text-ink-soft">
+      <div className="mt-8">
+        <ContactForm />
+      </div>
+
+      <div className="mt-10 space-y-4 border-t border-line pt-8 leading-relaxed text-ink-soft">
         <p>
-          Email us at{' '}
+          Prefer email? Write to{' '}
           <a
-            href="mailto:hello@livelaughlocal.co.uk"
+            href="mailto:hello@spacesplease.com"
             className="font-medium text-coral-deep underline underline-offset-2 hover:text-coral"
           >
-            hello@livelaughlocal.co.uk
+            hello@spacesplease.com
           </a>{' '}
           for anything to do with the site. That includes:
         </p>
