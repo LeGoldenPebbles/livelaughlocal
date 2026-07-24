@@ -17,15 +17,26 @@ records, per event:
 | `RefStat` | `{ day, source, count }` | referrer hostname (`google.com`, `facebook.com`, …) or `direct`; internal navigation is never recorded |
 | `Article.viewCount` | integer | all-time views, bumped for `/category/slug` paths |
 
+Outbound clicks are counted separately by `components/OutboundClicks.js` →
+`POST /api/click`:
+
+| Model | Row | Meaning |
+|---|---|---|
+| `ClickStat` | `{ day, host, path, count }` | a reader followed an external link out of an article: destination hostname, source article path. Internal links are ignored. This is how we know whether the discreet Spaces Please credit links actually get clicked |
+
+The listener is scoped to the article element, handles normal/new-tab/middle
+clicks, and never delays or blocks the navigation.
+
 The beacon endpoint always answers 204 and swallows every error - analytics
 must never break a page.
 
 ## Reporting endpoints (admin-gated)
 
 - `GET /api/admin/stats` - counts by status, total views, 30-day
-  views-by-day + uniques-by-day series, top referrers, article-vs-other
-  reading split, submission counts, featured earnings summary
-  (`stripeConfigured`, charged count, £ total, live-now count).
+  views-by-day + uniques-by-day series, top referrers, **outbound clicks by
+  destination host**, article-vs-other reading split, submission counts,
+  featured earnings summary (`stripeConfigured`, charged count, £ total,
+  live-now count).
 - `GET /api/admin/stats/articles` - top 50 published articles with all-time
   views and a sparse last-14-day daily series (consumers zero-fill).
 

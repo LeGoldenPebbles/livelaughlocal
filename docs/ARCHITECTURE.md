@@ -55,7 +55,8 @@ alphabetical. Everything derives from it:
 | `POST /api/pv` | cookieless analytics beacon (see docs/ANALYTICS.md) |
 | `POST /api/submissions` + `/confirm` | public submission + email confirm token |
 | `POST /api/remove/request` + `/confirm` | removal request + HMAC link |
-| `POST /api/upload` | R2 image upload for submissions (503 until R2 env set) |
+| `POST /api/upload` | R2 image upload for submissions. Validates magic bytes (a spoofed Content-Type on an HTML/SVG payload is rejected) and records a `FileStorage` row in the livelaughlocal database |
+| `POST /api/click` | cookieless outbound-click counter (see docs/ANALYTICS.md) |
 | `GET /api/featured/confirm` | Stripe Checkout return - stores the saved card |
 | `/api/admin/*` | login, articles list/actions, stats, stats/articles, removals - all gated by the `lll_admin` HMAC cookie |
 
@@ -69,7 +70,11 @@ alphabetical. Everything derives from it:
 - **Email**: nodemailer via `EMAIL_*` env. Unset = every send no-ops with a
   console warning and the calling flow continues (production currently runs
   without email configured).
-- **Cloudflare R2**: submission image uploads, bucket `livelaughlocal`.
+- **Cloudflare R2**: submission image uploads. Bucket `livelaughlocal` (same
+  Cloudflare account as Spaces Please, separate bucket), served from the
+  custom domain **images.livelaughlocal.co.uk**. Every object is indexed by a
+  `FileStorage` row in the livelaughlocal database, so images can be traced
+  and orphans swept without listing the bucket.
 - **Spaces Please admin bridge**: the Pandora's Box command centre calls this
   app's admin API server-to-server. See docs/ADMIN.md.
 
@@ -90,4 +95,13 @@ the live site once (see CLAUDE.md).
   (`lib/tokens.js`) - nothing stored, nothing guessable.
 - All submitted HTML passes through the `lib/sanitize.js` allowlist; paid
   content links get `rel="sponsored nofollow"`.
-- Rate limiting on submissions (in-memory, per IP).
+- The submission editor pastes as plain text and normalises link URLs to an
+  http/https/mailto allowlist, so `javascript:`/`data:` URLs never enter the
+  document in the first place (the server sanitizer remains the real gate).
+- Uploads are sniffed by magic bytes and must match their declared type;
+  R2 objects are stored `ContentDisposition: inline` so nothing can be served
+  as an executable download.
+- Rate limiting on submissions, uploads and the contact form (in-memory, per
+  IP - single instance, see `lib/rateLimit.js`).
+- Body length is capped both client-side and server-side (raw markup and
+  plain-text), so no caller can make the sanitizer chew megabytes.
