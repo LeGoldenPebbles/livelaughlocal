@@ -76,7 +76,7 @@ export async function POST(request) {
             `<p>Someone - hopefully you - asked to remove the article
              "<strong>${escapeHtml(article.title || slug)}</strong>" from Live Laugh Local.</p>
              <p>Click the button below to confirm. The article comes down straight away.</p>
-             <p style="margin:24px 0;"><a href="${removeUrl}" style="background:#E85D3D;color:#ffffff;text-decoration:none;padding:10px 22px;border-radius:999px;font-family:Arial,Helvetica,sans-serif;font-size:14px;">Remove my article</a></p>
+             <p style="margin:24px 0;"><a href="${removeUrl}" style="background:#EF5A3C;color:#ffffff;text-decoration:none;padding:10px 22px;border-radius:999px;font-family:Arial,Helvetica,sans-serif;font-size:14px;">Remove my article</a></p>
              <p>If the button does not work, paste this link into your browser:<br>
              <a href="${removeUrl}">${removeUrl}</a></p>
              <p>Didn't ask for this? Ignore this email - nothing happens without the click.</p>`

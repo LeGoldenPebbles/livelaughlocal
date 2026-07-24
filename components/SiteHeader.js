@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { CATEGORIES } from '@/lib/constants';
 
 function NavLink({ href, children }) {
@@ -17,11 +18,15 @@ export default function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur">
       <div className="mx-auto max-w-site px-4 sm:px-6">
         <div className="flex items-center justify-between py-4">
-          <Link
-            href="/"
-            className="font-display lowercase tracking-tight text-2xl sm:text-[1.75rem]"
-          >
-            live laugh local<span className="text-coral"> *</span>
+          <Link href="/" className="shrink-0">
+            <Image
+              src="/linelogo.png"
+              alt="Live Laugh Local"
+              width={800}
+              height={144}
+              priority
+              className="h-8 w-auto sm:h-9"
+            />
           </Link>
           <Link
             href="/submit"

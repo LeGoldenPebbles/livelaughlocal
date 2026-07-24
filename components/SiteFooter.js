@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { CATEGORIES, SITE } from '@/lib/constants';
 
 export default function SiteFooter() {
@@ -7,9 +8,13 @@ export default function SiteFooter() {
       <div className="mx-auto max-w-site px-4 py-10 sm:px-6">
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
           <div>
-            <p className="font-display lowercase text-xl">
-              live laugh local<span className="text-coral"> *</span>
-            </p>
+            <Image
+              src="/linelogo.png"
+              alt="Live Laugh Local"
+              width={800}
+              height={144}
+              className="h-6 w-auto"
+            />
             <p className="mt-2 max-w-xs text-sm text-ink-soft">{SITE.description}</p>
           </div>
           <div>

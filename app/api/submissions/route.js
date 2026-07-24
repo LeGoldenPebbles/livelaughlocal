@@ -168,7 +168,7 @@ export async function POST(request) {
            <p>Click the button below to confirm this email address. Your story then joins the
            review queue - a human editor reads everything before it goes live, and we may edit
            lightly for style.</p>
-           <p style="margin:24px 0;"><a href="${confirmUrl}" style="background:#E85D3D;color:#ffffff;text-decoration:none;padding:10px 22px;border-radius:999px;font-family:Arial,Helvetica,sans-serif;font-size:14px;">Confirm my email</a></p>
+           <p style="margin:24px 0;"><a href="${confirmUrl}" style="background:#EF5A3C;color:#ffffff;text-decoration:none;padding:10px 22px;border-radius:999px;font-family:Arial,Helvetica,sans-serif;font-size:14px;">Confirm my email</a></p>
            <p>If the button does not work, paste this link into your browser:<br>
            <a href="${confirmUrl}">${confirmUrl}</a></p>
            <p>Changed your mind? You can request removal of your article at any time at

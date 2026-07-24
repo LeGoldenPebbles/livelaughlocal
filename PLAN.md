@@ -18,8 +18,8 @@ diverges.
   controller in the privacy policy (legally required). No mint, no shared visual DNA.
 
 ### Visual identity (deliberately different from Spaces Please)
-- **Palette:** warm paper background `#FAF7F2`, ink charcoal `#211E1A`, accent
-  coral `#E85D3D`, secondary sage `#7A8B6F`. No mint (#00e0bb) anywhere.
+- **Palette:** warm paper background `#F7F2EA`, ink charcoal `#181715`, accent
+  coral `#EF5A3C`, secondary sage `#385348`. No mint (#00e0bb) anywhere.
 - **Type:** serif display for headlines (Fraunces or similar via next/font),
   clean sans for body (Inter). Editorial magazine feel.
 - **Logo:** lowercase serif wordmark "live laugh local" with a simple spark/asterisk

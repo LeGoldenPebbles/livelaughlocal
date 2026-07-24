@@ -18,7 +18,7 @@ export default function OgImage() {
           flexDirection: 'column',
           justifyContent: 'center',
           padding: '80px',
-          background: 'linear-gradient(135deg, #E85D3D 0%, #C74A2E 100%)',
+          background: 'linear-gradient(135deg, #EF5A3C 0%, #D14328 100%)',
           position: 'relative',
           fontFamily: 'sans-serif',
         }}
@@ -49,7 +49,7 @@ export default function OgImage() {
           style={{
             display: 'flex',
             fontSize: '104px',
-            color: '#FAF7F2',
+            color: '#F7F2EA',
             letterSpacing: '-3px',
             lineHeight: 1.05,
           }}
@@ -61,7 +61,7 @@ export default function OgImage() {
             display: 'flex',
             marginTop: '28px',
             fontSize: '44px',
-            color: '#FBEAE4',
+            color: '#FCE9E3',
           }}
         >
           What&apos;s on near you
@@ -75,7 +75,7 @@ export default function OgImage() {
                 padding: '12px 28px',
                 borderRadius: '999px',
                 background: 'rgba(250, 247, 242, 0.92)',
-                color: '#C74A2E',
+                color: '#D14328',
                 fontSize: '28px',
               }}
             >

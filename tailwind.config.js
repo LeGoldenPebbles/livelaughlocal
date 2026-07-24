@@ -8,22 +8,22 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        paper: '#FAF7F2',
+        paper: '#F7F2EA',
         ink: {
-          DEFAULT: '#211E1A',
-          soft: '#4A453E',
-          faint: '#8A837A',
+          DEFAULT: '#181715',
+          soft: '#46423C',
+          faint: '#8A847A',
         },
         coral: {
-          DEFAULT: '#E85D3D',
-          deep: '#C74A2E',
-          tint: '#FBEAE4',
+          DEFAULT: '#EF5A3C',
+          deep: '#D14328',
+          tint: '#FCE9E3',
         },
         sage: {
-          DEFAULT: '#7A8B6F',
-          tint: '#EDF0EA',
+          DEFAULT: '#385348',
+          tint: '#DCE4DA',
         },
-        line: '#E7E1D8',
+        line: '#E8E1D2',
       },
       fontFamily: {
         display: ['var(--font-fraunces)', 'Georgia', 'serif'],

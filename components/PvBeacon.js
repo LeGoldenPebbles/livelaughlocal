@@ -8,7 +8,11 @@ export default function PvBeacon({ path }) {
   useEffect(() => {
     if (!path) return;
     try {
-      const payload = JSON.stringify({ path });
+      const ref =
+        typeof document !== 'undefined' && document.referrer
+          ? document.referrer
+          : '';
+      const payload = JSON.stringify({ path, ref });
       if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
         navigator.sendBeacon(
           '/api/pv',

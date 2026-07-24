@@ -7,6 +7,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'imagedelivery.net' },
       { protocol: 'https', hostname: '**.r2.dev' },
       { protocol: 'https', hostname: 'spacesplease.com' },
+      { protocol: 'https', hostname: 'upload.wikimedia.org' },
       ...(process.env.R2_PUBLIC_HOST
         ? [{ protocol: 'https', hostname: process.env.R2_PUBLIC_HOST }]
         : []),
