@@ -46,7 +46,9 @@ const GREEN = '#385348';
 
 const dark = tone !== 'coral';
 const bg = dark ? INK : CORAL;
-const blob = dark ? '#221E1B' : '#D14328';
+// Background texture only - kept very close to the base colour so it reads as a
+// soft tonal shift, never as two competing shapes behind the motif.
+const blob = dark ? '#1D1B19' : '#E9563A';
 const figure = dark ? PAPER : PAPER;
 const accent = dark ? CORAL : PAPER;
 const labelColour = dark ? '#8A847A' : 'rgba(247,242,234,0.75)';
@@ -125,8 +127,8 @@ const motifSvg = (MOTIFS[motif] || MOTIFS.star)();
 
 const svg = `<svg width="1600" height="900" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg">
   <rect width="1600" height="900" fill="${bg}"/>
-  <circle cx="1420" cy="90" r="280" fill="${blob}"/>
-  <circle cx="150" cy="830" r="230" fill="${blob}"/>
+  <circle cx="1480" cy="40" r="300" fill="${blob}"/>
+  <circle cx="90" cy="880" r="250" fill="${blob}"/>
   ${motifSvg}
   ${
     label
