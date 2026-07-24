@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CATEGORIES, FEATURED_PRICE_GBP, FEATURED_MONTHS } from '@/lib/constants';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Mirrors the server cap in app/api/submissions/route.js.
+const MAX_BODY_CHARS = 25000;
 
 const inputClass =
   'w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-coral focus:outline-none';
@@ -13,15 +15,40 @@ function FieldError({ message }) {
   return <p className="mt-1 text-xs text-coral-deep">{message}</p>;
 }
 
-function ToolbarButton({ label, title, onAction }) {
+/**
+ * Only http, https and mailto ever reach the document. Bare domains get https.
+ * The server sanitizer is the real gate - this stops javascript:/data: URLs
+ * entering the editor in the first place.
+ */
+function normaliseUrl(raw) {
+  let value = String(raw || '').trim();
+  if (!value) return null;
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(value)) value = `https://${value}`;
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+  if (!['http:', 'https:', 'mailto:'].includes(url.protocol)) return null;
+  return url.toString();
+}
+
+function ToolbarButton({ label, title, active, onAction }) {
   return (
     <button
       type="button"
       title={title}
       aria-label={title}
+      aria-pressed={active ? 'true' : 'false'}
+      // Keep the caret in the editor when the button takes the click.
       onMouseDown={(e) => e.preventDefault()}
       onClick={onAction}
-      className="rounded-md border border-line bg-white px-2.5 py-1 text-xs font-medium text-ink-soft transition-colors hover:border-coral hover:text-coral-deep"
+      className={
+        active
+          ? 'rounded-md border border-coral bg-coral px-2.5 py-1 text-xs font-medium text-white transition-colors'
+          : 'rounded-md border border-line bg-white px-2.5 py-1 text-xs font-medium text-ink-soft transition-colors hover:border-coral hover:text-coral-deep'
+      }
     >
       {label}
     </button>
@@ -48,6 +75,7 @@ export default function SubmitForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
+  const [formats, setFormats] = useState({});
   const editorRef = useRef(null);
   const startedAtRef = useRef(null);
 
@@ -55,14 +83,150 @@ export default function SubmitForm() {
     startedAtRef.current = Date.now();
   }, []);
 
-  function exec(command, value) {
-    document.execCommand(command, false, value);
+  // Is the caret inside <tag>, bounded to the editor?
+  const inTag = useCallback((tag) => {
+    const editor = editorRef.current;
+    const sel = typeof window !== 'undefined' ? window.getSelection() : null;
+    if (!editor || !sel || !sel.rangeCount) return false;
+    let node = sel.getRangeAt(0).startContainer;
+    if (node.nodeType === 3) node = node.parentNode;
+    if (!node || !editor.contains(node)) return false;
+    const match = node.closest(tag);
+    return Boolean(match && editor.contains(match));
+  }, []);
+
+  // Drives the toolbar's on/off styling.
+  const refreshFormats = useCallback(() => {
+    const editor = editorRef.current;
+    const sel = typeof window !== 'undefined' ? window.getSelection() : null;
+    if (!editor || !sel || !sel.rangeCount) return setFormats({});
+    let node = sel.getRangeAt(0).startContainer;
+    if (node.nodeType === 3) node = node.parentNode;
+    if (!node || !editor.contains(node)) return setFormats({});
+    try {
+      setFormats({
+        bold: document.queryCommandState('bold'),
+        italic: document.queryCommandState('italic'),
+        ul: document.queryCommandState('insertUnorderedList'),
+        ol: document.queryCommandState('insertOrderedList'),
+        h2: inTag('h2'),
+        h3: inTag('h3'),
+        quote: inTag('blockquote'),
+        link: inTag('a'),
+      });
+    } catch {
+      setFormats({});
+    }
+  }, [inTag]);
+
+  useEffect(() => {
+    const onSelectionChange = () => refreshFormats();
+    document.addEventListener('selectionchange', onSelectionChange);
+    return () => document.removeEventListener('selectionchange', onSelectionChange);
+  }, [refreshFormats]);
+
+  function sync() {
     if (editorRef.current) setBodyHtml(editorRef.current.innerHTML);
+    refreshFormats();
+  }
+
+  function focusEditor() {
+    if (editorRef.current) editorRef.current.focus();
+  }
+
+  // Bold/italic. Applying to a highlighted run must not leave the mode switched
+  // on for whatever is typed next.
+  function toggleInline(command) {
+    focusEditor();
+    const sel = window.getSelection();
+    const hadSelection = Boolean(sel && !sel.isCollapsed);
+    document.execCommand(command, false, null);
+    if (hadSelection) {
+      const after = window.getSelection();
+      if (after && after.rangeCount) after.collapseToEnd();
+      if (document.queryCommandState(command)) document.execCommand(command, false, null);
+    }
+    sync();
+  }
+
+  // Headings and quotes. formatBlock does not toggle on its own, so pressing an
+  // active button has to explicitly return the block to a paragraph.
+  function toggleBlock(tag) {
+    focusEditor();
+    const active = inTag(tag.toLowerCase());
+    if (tag === 'BLOCKQUOTE') {
+      if (active) {
+        document.execCommand('outdent');
+        if (inTag('blockquote')) document.execCommand('formatBlock', false, 'P');
+      } else {
+        document.execCommand('formatBlock', false, 'BLOCKQUOTE');
+      }
+    } else {
+      document.execCommand('formatBlock', false, active ? 'P' : tag);
+    }
+    sync();
+  }
+
+  function toggleList(command) {
+    focusEditor();
+    document.execCommand(command, false, null); // execCommand toggles lists natively
+    sync();
   }
 
   function addLink() {
-    const url = window.prompt('Link URL (https://...)');
-    if (url) exec('createLink', url);
+    focusEditor();
+    if (inTag('a')) {
+      document.execCommand('unlink', false, null);
+      sync();
+      return;
+    }
+    const url = normaliseUrl(window.prompt('Link URL (https://...)'));
+    if (!url) {
+      if (window.getSelection()) sync();
+      return;
+    }
+    const sel = window.getSelection();
+    if (sel && sel.isCollapsed) {
+      // Nothing highlighted - drop the address in as its own link text.
+      const safe = url.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+      document.execCommand('insertHTML', false, `<a href="${safe}">${safe}</a>`);
+    } else {
+      document.execCommand('createLink', false, url);
+    }
+    sync();
+  }
+
+  // Enter should escape a heading, and escape a quote once the line is empty -
+  // otherwise every following paragraph inherits the block forever.
+  function handleEditorKeyDown(e) {
+    if (e.key !== 'Enter' || e.shiftKey) return;
+    const inHeading = inTag('h2') || inTag('h3');
+    const inQuote = inTag('blockquote');
+    if (!inHeading && !inQuote) return;
+
+    if (inQuote && !inHeading) {
+      const sel = window.getSelection();
+      let node = sel && sel.rangeCount ? sel.getRangeAt(0).startContainer : null;
+      if (node && node.nodeType === 3) node = node.parentNode;
+      const line = node && node.closest('p, div, blockquote');
+      if (line && line.textContent.trim()) return; // mid-quote: keep quoting
+    }
+
+    e.preventDefault();
+    document.execCommand('insertParagraph');
+    if (inQuote) document.execCommand('outdent');
+    document.execCommand('formatBlock', false, 'P');
+    sync();
+  }
+
+  // Paste as plain text: styles, scripts, trackers and pasted markup from Word
+  // or the web never enter the document.
+  function handlePaste(e) {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    if (!text) return;
+    document.execCommand('insertText', false, text.slice(0, MAX_BODY_CHARS));
+    sync();
   }
 
   async function handleFile(e) {
@@ -182,7 +346,7 @@ export default function SubmitForm() {
         </p>
         <p className="mt-3 text-sm leading-relaxed text-ink-soft">
           No email after a few minutes? Check your spam folder, or write to
-          hello@livelaughlocal.co.uk and we will sort it.
+          hello@spacesplease.com and we will sort it.
         </p>
       </div>
     );
@@ -367,14 +531,19 @@ export default function SubmitForm() {
       <div>
         <span className="mb-1 block text-sm font-medium text-ink">Your story</span>
         <div className="mb-2 flex flex-wrap gap-1.5">
-          <ToolbarButton label="B" title="Bold" onAction={() => exec('bold')} />
-          <ToolbarButton label="I" title="Italic" onAction={() => exec('italic')} />
-          <ToolbarButton label="H2" title="Heading" onAction={() => exec('formatBlock', 'H2')} />
-          <ToolbarButton label="H3" title="Subheading" onAction={() => exec('formatBlock', 'H3')} />
-          <ToolbarButton label="• List" title="Bulleted list" onAction={() => exec('insertUnorderedList')} />
-          <ToolbarButton label="1. List" title="Numbered list" onAction={() => exec('insertOrderedList')} />
-          <ToolbarButton label="Quote" title="Quote" onAction={() => exec('formatBlock', 'BLOCKQUOTE')} />
-          <ToolbarButton label="Link" title="Add a link" onAction={addLink} />
+          <ToolbarButton label="B" title="Bold" active={formats.bold} onAction={() => toggleInline('bold')} />
+          <ToolbarButton label="I" title="Italic" active={formats.italic} onAction={() => toggleInline('italic')} />
+          <ToolbarButton label="H2" title="Heading" active={formats.h2} onAction={() => toggleBlock('H2')} />
+          <ToolbarButton label="H3" title="Subheading" active={formats.h3} onAction={() => toggleBlock('H3')} />
+          <ToolbarButton label="• List" title="Bulleted list" active={formats.ul} onAction={() => toggleList('insertUnorderedList')} />
+          <ToolbarButton label="1. List" title="Numbered list" active={formats.ol} onAction={() => toggleList('insertOrderedList')} />
+          <ToolbarButton label="Quote" title="Quote" active={formats.quote} onAction={() => toggleBlock('BLOCKQUOTE')} />
+          <ToolbarButton
+            label={formats.link ? 'Unlink' : 'Link'}
+            title={formats.link ? 'Remove this link' : 'Add a link'}
+            active={formats.link}
+            onAction={addLink}
+          />
         </div>
         <div
           ref={editorRef}
@@ -385,9 +554,19 @@ export default function SubmitForm() {
           aria-label="Story body"
           data-placeholder="Write your story..."
           onInput={(e) => setBodyHtml(e.currentTarget.innerHTML)}
+          onKeyDown={handleEditorKeyDown}
+          onKeyUp={refreshFormats}
+          onMouseUp={refreshFormats}
+          onFocus={refreshFormats}
+          onPaste={handlePaste}
           className="editor-surface article-body rounded-lg border border-line bg-white p-4"
         />
-        <FieldError message={errors.body} />
+        <div className="mt-1 flex items-baseline justify-between">
+          <FieldError message={errors.body} />
+          <span className="text-xs text-ink-faint">
+            {bodyHtml.replace(/<[^>]+>/g, '').trim().length}/{MAX_BODY_CHARS}
+          </span>
+        </div>
       </div>
 
       <div className="rounded-xl border border-line bg-white p-4 sm:p-5">

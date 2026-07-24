@@ -5,6 +5,7 @@ import PageView from '@/models/PageView';
 import DailyUnique from '@/models/DailyUnique';
 import RefStat from '@/models/RefStat';
 import RemovalRequest from '@/models/RemovalRequest';
+import ClickStat from '@/models/ClickStat';
 import { isAdminRequest } from '@/lib/adminAuth';
 import { CATEGORY_SLUGS } from '@/lib/constants';
 
@@ -35,6 +36,7 @@ export async function GET(request) {
       submissions30,
       featuredCharged,
       featuredActiveNow,
+      outboundClicks,
     ] = await Promise.all([
       Article.aggregate([{ $group: { _id: '$status', n: { $sum: 1 } } }]),
       Article.aggregate([
@@ -71,6 +73,12 @@ export async function GET(request) {
       Article.countDocuments({ origin: 'submission', createdAt: { $gte: created30 } }),
       Article.countDocuments({ 'stripe.chargeId': { $exists: true, $nin: [null, ''] } }),
       Article.countDocuments({ 'featured.active': true, 'featured.until': { $gt: new Date() } }),
+      ClickStat.aggregate([
+        { $match: { day: { $gte: since30 } } },
+        { $group: { _id: '$host', count: { $sum: '$count' } } },
+        { $sort: { count: -1 } },
+        { $limit: 12 },
+      ]),
     ]);
 
     const counts = {};
@@ -96,6 +104,7 @@ export async function GET(request) {
       viewsByDay: pvByDay.map((d) => ({ day: d._id, count: d.count })),
       uniquesByDay: uniquesByDay.map((d) => ({ day: d._id, count: d.count })),
       referrers: referrers.map((r) => ({ source: r._id, count: r.count })),
+      outboundClicks: outboundClicks.map((c) => ({ host: c._id, count: c.count })),
       pvSplit: { articles: pvArticles, other: pvOther },
       submissions: { total: submissionsTotal, last30: submissions30 },
       earnings: {

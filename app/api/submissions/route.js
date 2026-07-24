@@ -89,13 +89,23 @@ export async function POST(request) {
 
     const wantsFeatured = Boolean(body.featured);
 
+    // Cap raw input before sanitising - a caller cannot make us process
+    // megabytes of markup. 100k of raw HTML comfortably holds a long article.
+    const rawBody = String(body.bodyHtml || '');
+    if (rawBody.length > 100000) {
+      return bad('That story is too long.');
+    }
+
     // Paid articles must never carry followed links.
-    const bodyHtml = sanitizeBody(String(body.bodyHtml || ''), {
+    const bodyHtml = sanitizeBody(rawBody, {
       linkRel: wantsFeatured ? 'sponsored' : 'nofollow',
     });
     const plainText = bodyHtml.replace(/<[^>]+>/g, '').trim();
     if (plainText.length < 200) {
       return bad('Your story needs a bit more body text');
+    }
+    if (plainText.length > 25000) {
+      return bad('That story is too long - please keep it under 25,000 characters.');
     }
 
     // Hero image: optional, but only from our own uploader.

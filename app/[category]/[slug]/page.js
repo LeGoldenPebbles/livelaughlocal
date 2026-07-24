@@ -7,6 +7,7 @@ import MostRead from '@/components/MostRead';
 import ArticleBody from '@/components/ArticleBody';
 import ArticleCard from '@/components/ArticleCard';
 import PvBeacon from '@/components/PvBeacon';
+import OutboundClicks from '@/components/OutboundClicks';
 
 export const revalidate = 300;
 
@@ -97,7 +98,7 @@ export default async function ArticlePage({ params }) {
   return (
     <div className="flex gap-10">
       <div className="min-w-0 flex-1">
-        <article className="mx-auto max-w-article">
+        <article className="mx-auto max-w-article" data-article-body>
           {cat && category === 'breaking-news' ? (
             <Link
               href={`/${category}`}
@@ -213,6 +214,7 @@ export default async function ArticlePage({ params }) {
           )}
 
           <PvBeacon path={'/' + category + '/' + slug} />
+          <OutboundClicks path={'/' + category + '/' + slug} />
         </article>
       </div>
 
