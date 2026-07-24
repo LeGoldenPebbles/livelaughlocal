@@ -65,21 +65,32 @@ export default async function ArticlePage({ params }) {
 
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    // NewsArticle site-wide: this is a news magazine, and it is the schema
+    // type Google's news surfaces (News tab, Top Stories, Discover) expect.
+    '@type': 'NewsArticle',
     headline: doc.title,
     ...(doc.publishedAt ? { datePublished: doc.publishedAt } : {}),
     ...(doc.updatedAt || doc.publishedAt
       ? { dateModified: doc.updatedAt || doc.publishedAt }
       : {}),
+    ...(cat ? { articleSection: cat.name } : {}),
     author:
       doc.byline?.kind === 'staff'
         ? {
             '@type': 'Organization',
             name: doc.byline?.name || 'Live Laugh Local team',
+            url: `${SITE.url}/about`,
           }
         : { '@type': 'Person', name: doc.byline?.name || 'Contributor' },
     ...(absoluteHero(doc) ? { image: [absoluteHero(doc)] } : {}),
-    publisher: { '@type': 'Organization', name: SITE.name },
+    publisher: {
+      '@type': 'Organization',
+      name: SITE.name,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${SITE.url}/linelogo.png`,
+      },
+    },
     mainEntityOfPage: `${SITE.url}/${category}/${slug}`,
   };
 
