@@ -47,13 +47,23 @@ Single Next.js 15 app (App Router, JavaScript, Tailwind 3). No separate backend.
 
 ```
 app/            routes (public pages, /submit, /remove, /admin, api/*)
-components/     shared components (ads/ subfolder = AdSlot system)
-lib/            db, constants (CATEGORIES - single source of truth), sanitize,
-                tokens (HMAC), mailer, articles (guarded data access), spEvents,
-                adConfig (placement rules), houseAds
-models/         Article, HouseAd, RemovalRequest, PageView (Mongoose)
+components/     shared components (NewsMenu = the News mega-menu; ads/ retired)
+lib/            db, constants (28-category taxonomy - single source of truth),
+                sanitize, tokens (HMAC), mailer, articles (guarded data access
+                + getActiveCategories), spEvents, featuredStripe, adminAuth
+models/         Article, HouseAd, RemovalRequest, PageView, DailyUnique,
+                RefStat (Mongoose)
 scripts/        seed + generator
+docs/           ARCHITECTURE / CONTENT / PAYMENTS / ANALYTICS / ADMIN - read
+                the relevant one before touching that area
 ```
+
+### Taxonomy (24 Jul 2026)
+Nav = Latest | News (alphabetical mega-menu) | What's on. 28 categories in
+lib/constants.js; menu/footer/chips/sitemap only ever render categories that
+hold published articles (getActiveCategories). breaking-news gets the pulsing
+coral BREAKING badge. Articles re-shelve safely: old category URLs 301 to the
+current one (slug is globally unique). Full rules: docs/CONTENT.md.
 
 ### Non-negotiable conventions
 1. **Article HTML is a sanitized subset ONLY** (p, h2, h3, strong, em, a, ul,
@@ -67,15 +77,16 @@ scripts/        seed + generator
    is kept in the repo for a possible return to manual units - do not delete
    it. Paid featured articles STILL render as labelled sponsored cards in the
    feed via FeedWithAds (that is the £100 product, not display inventory).
-3. **Cookie posture.** Analytics is the cookieless PageView beacon. The
-   adsbygoogle script loads when NEXT_PUBLIC_ADSENSE_CLIENT is set (pub id
-   ca-pub-1573259509891705; ads.txt in public/) - initially for AdSense site
-   verification. Personalised ads must NOT serve to UK/EEA visitors until the
-   Google Privacy & messaging consent message is configured in the AdSense
-   account (certified CMP - Google enforces this). House ads are the default
-   slot fill and remain the fallback for unfilled inventory; never delete
-   them. Auto ads stay OFF - manual units in AdSlot's reserved containers
-   only (CLS discipline). Do not add any other third-party script casually.
+3. **Cookie posture.** Analytics is fully self-hosted and cookieless:
+   PageView per path/day + DailyUnique (daily-rotating HMAC of ip|ua|day,
+   keyed TOKEN_SECRET) + RefStat referrer hostnames - see docs/ANALYTICS.md.
+   The adsbygoogle script loads when NEXT_PUBLIC_ADSENSE_CLIENT is set (pub
+   id ca-pub-1573259509891705; ads.txt in public/). **Auto ads are ON (owner
+   decision, 23 Jul 2026)** - Google positions display ads itself.
+   Personalised ads must NOT serve to UK/EEA visitors until the Google
+   Privacy & messaging consent message is configured in the AdSense account
+   (certified CMP - Google enforces this). Do not add any other third-party
+   script casually.
 4. **`NOINDEX=true` until livelaughlocal.co.uk is attached** - never let Google
    index a temporary domain.
 5. **Removal/confirm links are stateless HMAC tokens** (`lib/tokens.js`),
@@ -108,9 +119,33 @@ See `.env.example` for the full annotated list. Secrets live in `.env.local`
 
 ## Deployment
 
-- GitHub repo -> Render web service (Starter tier - free tier cold starts
-  poison SEO crawling), autodeploy on push to `main`.
-- Domain: livelaughlocal.co.uk. After it's attached: set `NOINDEX=false`,
-  verify in Google Search Console, submit /sitemap.xml.
+- **Pushes do NOT auto-deploy.** The repo is public and connected to Render
+  without a webhook. After every push: `POST /v1/services/{id}/deploys` via
+  the Render API (token per the Spaces Please project's conventions) or the
+  dashboard's Manual Deploy button. Verify the deploy is `live` before
+  claiming anything shipped.
+- Domain livelaughlocal.co.uk is LIVE, `NOINDEX=false` - the SEO clock is
+  running. Still pending: owner's Google Search Console verification.
 - Kill criteria (PLAN.md section 13): near-zero indexation at 8-12 weeks means
   stop, fold content into spacesplease.com, keep the pipeline.
+
+## Operational landmines (each of these has already bitten once)
+
+1. **Config before data.** A new image host must be in next.config.mjs
+   remotePatterns ON THE LIVE DEPLOY before any article references it -
+   the reverse order broke the live homepage for ~10 minutes.
+2. **Script inserts must validate.** Schemaless updateOne bypasses Mongoose
+   validation but admin publish re-saves through the real model - an
+   over-limit field (e.g. metaDesc > 160) makes publishing 500 later. Run
+   doc.validate() against the real schema before inserting.
+3. **Stale local servers.** Stopping a backgrounded `npx next start` does not
+   kill the node process on Windows - taskkill the PID holding the port, or
+   you will verify against an old build. Also: after a rebuild, `next start`
+   serves the previous build's ISR-cached page on the FIRST hit
+   (.next/cache persists) - always request twice.
+4. **Local Stripe testing runs on port 3005** - with SITE_URL unset the
+   Checkout return URL defaults to localhost:3005. Test key only, never live.
+5. **The Pandora's Box bridge shares this app's secrets**: rotating
+   TOKEN_SECRET/ADMIN_KEY requires updating LLL_TOKEN_SECRET/LLL_ADMIN_KEY on
+   both Spaces Please backends or the command centre goes dark
+   (docs/ADMIN.md).

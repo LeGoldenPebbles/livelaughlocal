@@ -4,9 +4,9 @@
 
 ### 1. Render service
 Dashboard -> New -> **Blueprint** -> pick the `livelaughlocal` GitHub repo.
-`render.yaml` creates one web service (Starter, Frankfurt, autodeploy on push
-to main). Free tier is deliberately NOT used: cold starts poison crawler
-response times and this site lives on SEO.
+`render.yaml` creates one web service (Starter, Oregon - same region as the
+Spaces Please stack). Free tier is deliberately NOT used: cold starts poison
+crawler response times and this site lives on SEO.
 
 ### 2. Environment variables (dashboard -> service -> Environment)
 The blueprint pre-fills the public ones. Fill the secret ones:
@@ -43,8 +43,20 @@ npm run seed -- --publish # or straight to published
 Runs against MONGODB_URI from `.env.local` or the environment.
 
 ## Ongoing
-- Push to `main` = deploy (autodeploy on).
-- Admin: `/admin`, password = ADMIN_KEY. Not linked anywhere, noindexed.
+
+- **Pushing to `main` does NOT deploy.** The repo is connected as a public
+  repo without a webhook, so Render never hears about pushes. After every
+  push, trigger the build yourself:
+  - API: `POST https://api.render.com/v1/services/{serviceId}/deploys`
+    with the Render API token (service: the livelaughlocal web service), or
+  - Dashboard: service -> Manual Deploy -> "Deploy latest commit".
+  Then poll the deploy until `status: live` before claiming it shipped.
+  (Granting Render's GitHub app access to the repo would restore webhooks
+  and allow flipping the repo private again - owner's call, not done yet.)
+- Admin: `/admin`, password = ADMIN_KEY - or the Pandora's Box command centre
+  on Spaces Please (docs/ADMIN.md).
 - Publish cadence: max 1 editorial piece per weekday. Ramp only when Search
   Console shows indexation (kill criteria in PLAN.md section 13).
-- Phase 2 gates (AdSense + CMP, cron generation): PLAN.md section 12.
+- Still pending post-launch: owner's Google Search Console verification +
+  sitemap submit; AdSense Privacy & messaging consent message (required
+  before ads serve to UK/EEA); .io domain 301.

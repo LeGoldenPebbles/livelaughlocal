@@ -1,0 +1,91 @@
+# Content: taxonomy, lifecycle, limits, images
+
+## Article lifecycle
+
+```
+draft → pending → published
+              ↘ rejected
+published → draft (unpublish) · removed (removal request / admin)
+```
+
+- `origin: 'generated'` - written by the in-house pipeline, team byline.
+- `origin: 'submission'` - public submission; carries `submitterEmail`,
+  email-confirm state, and optionally the featured/Stripe fields.
+- Publishing is ALWAYS a human action in a review queue (`/admin` or the
+  Pandora's Box command centre). Nothing auto-publishes.
+- Publishing a submission emails the submitter; publishing a featured
+  submission also fires the £100 charge (docs/PAYMENTS.md).
+
+## Schema limits (validation is real - respect it)
+
+| Field | Limit |
+|---|---|
+| `title` | 120 chars |
+| `dek` | 160 chars |
+| `seo.metaTitle` | 70 chars |
+| `seo.metaDesc` | 160 chars |
+| `byline.name` | 80 chars |
+| `category` | must be one of the 28 taxonomy slugs |
+
+**Landmine:** raw `updateOne`/schemaless inserts bypass Mongoose validation,
+but the admin publish action re-saves through the real model - an over-limit
+field inserted by a script will make PUBLISHING fail later with a generic 500.
+Any script that inserts articles must run `doc.validate()` against the real
+schema first. This exact bug (a 161-char metaDesc) broke an approval in prod.
+
+## Taxonomy rules
+
+- 28 categories in `lib/constants.js`, alphabetical - the single source of
+  truth. Adding one = adding a line there; the Article enum, menu, sitemap and
+  category pages all follow.
+- Empty categories are never linked anywhere (menu/footer/chips/sitemap render
+  from `getActiveCategories()`); they light up when their first article
+  publishes.
+- Re-shelve freely: change `category` on the article, old URLs 301.
+- `breaking-news` renders the pulsing coral BREAKING badge everywhere the
+  article appears. Only file genuinely fresh stories there (last 24-48h,
+  verified by source publication dates) - never dress up a stale story.
+
+## Editorial rules
+
+- UK English, warm local-paper tone. **No em or en dashes - hyphens only.**
+- Clickbait headlines are allowed and encouraged for news, but must be 100%
+  honest - the body must deliver exactly what the headline promises.
+- Every factual claim comes from a live event listing or a source page that
+  was actually opened during research. No invented quotes, numbers or dates.
+- Generated articles go through the multi-agent pipeline: parallel research
+  sweeps → editor pick → writer → two adversarial fact-check lenses (facts vs
+  sources; honest-clickbait + limits + style) → fixes → insert as `pending`.
+- Every article ends with the discreet Spaces Please credit line (rendered by
+  the article template, `utm_medium=article_footer`). Do not add louder
+  disclosures - the owner explicitly removed an in-body "full disclosure"
+  paragraph.
+- Publish cap: one editorial piece per weekday. Cadence ramps only on Search
+  Console evidence.
+
+## Image sourcing (rights are absolute)
+
+Allowed hero sources, in order of preference:
+
+1. **Spaces Please event images** (`imagedelivery.net`, or spacesplease.com
+   assets) - we host them, organisers uploaded them.
+2. **Openly licensed photos**, e.g. Wikimedia Commons CC BY / CC BY-SA.
+   Credit is mandatory in `heroImage.credit`: photographer, event/context,
+   licence, source (e.g. "Image: Stephen and Helen Jones, WOMAD 2023 at
+   Charlton Park, CC BY-SA 2.0, via Wikimedia Commons"). Prefer wide scene
+   shots; avoid close-ups of identifiable private individuals.
+3. **Owner-supplied art** (brand assets, generated images).
+
+Never: news-wire photos, press shots, anything scraped without a licence.
+
+Articles without a hero are fine - the branded site card covers social shares.
+
+**Deploy order rule:** a hero host must exist in `next.config.mjs`
+`images.remotePatterns` ON THE DEPLOYED BUILD before any live article
+references it. Config first, verify live, then data.
+
+## Statuses that surface money
+
+`featured.active + featured.until` drive the sponsored feed card and the
+"Featured live" stats; `stripe.chargeId` marks a placement as paid (exactly
+once, ever). Do not hand-edit these fields.
