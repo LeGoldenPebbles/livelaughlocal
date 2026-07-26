@@ -8,6 +8,7 @@ import { makeToken } from '@/lib/tokens';
 import { sendMail, emailShell } from '@/lib/mailer';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { createFeaturedCheckout } from '@/lib/featuredStripe';
+import { sendSubmissionAlert } from '@/lib/ntfy';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_FILL_MS = 5000;
@@ -193,6 +194,10 @@ export async function POST(request) {
       // The submission stands even if the email fails - log and move on.
       console.error('[api/submissions] confirm email failed', err);
     }
+
+    // Push alert to the editor's phone. Fire-and-forget: never awaited into the
+    // failure path, and the service swallows its own errors.
+    sendSubmissionAlert({ featured: wantsFeatured, hasImage: Boolean(heroImage) });
 
     // Featured upsell: Stripe Checkout in setup mode (card saved, not charged).
     let checkoutUrl = null;
