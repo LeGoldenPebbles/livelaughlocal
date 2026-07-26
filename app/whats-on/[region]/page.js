@@ -40,6 +40,7 @@ export async function generateMetadata({ params }) {
   return {
     title: `What's on in ${region.name}`,
     description: `Upcoming markets, fairs and events in ${region.name} - dates, venues and stall info.`,
+    alternates: { canonical: `/whats-on/${slug}` },
   };
 }
 

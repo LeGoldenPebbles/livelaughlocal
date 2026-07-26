@@ -9,6 +9,12 @@ import NearMe from '@/components/NearMe';
 
 export const revalidate = 300;
 
+// The front page is the one most likely to be linked with tracking parameters,
+// so it needs an explicit canonical of its own.
+export const metadata = {
+  alternates: { canonical: '/' },
+};
+
 export default async function HomePage() {
   const [articles, featured, mostRead, regions, activeCategories] = await Promise.all([
     getFeed({ limit: 25 }),

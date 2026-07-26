@@ -4,6 +4,7 @@ import { SITE } from '@/lib/constants';
 export const metadata = {
   title: 'About',
   description: `What ${SITE.name} is, who runs it, and exactly how our articles are made.`,
+  alternates: { canonical: '/about' },
 };
 
 export default function AboutPage() {
@@ -41,18 +42,31 @@ export default function AboutPage() {
           here, so here it is in plain terms.
         </p>
         <p>
-          Our own pieces are researched and drafted with AI assistance. They are
-          grounded in live event listings from{' '}
+          Our own pieces are researched and drafted with AI assistance, and
+          every one is grounded in sources you can go and check yourself. Some
+          are built from live event listings on{' '}
           <a
             href="https://spacesplease.com?utm_source=livelaughlocal&utm_medium=about"
             className="font-medium text-coral-deep underline underline-offset-2 hover:text-coral"
           >
             Spaces Please
           </a>
-          , which means the dates, venues and details come from real, current
-          listings rather than a model&apos;s imagination. Every draft is
-          fact-checked against those listings and reviewed by a person before it
-          is published. Nothing goes live on autopilot.
+          , so the dates and venues come from real, current listings. Others are
+          reported out from primary sources: the organiser&apos;s own site, the
+          charity, the regulator, the government consultation. Where we quote
+          someone, we link to where they said it.
+        </p>
+        <p>
+          Every draft is then checked against those sources and read by a person
+          before it is published. Nothing goes live on autopilot, and if we get
+          something wrong we would rather you told us, so there is a{' '}
+          <Link
+            href="/contact"
+            className="font-medium text-coral-deep underline underline-offset-2 hover:text-coral"
+          >
+            contact form
+          </Link>{' '}
+          for corrections.
         </p>
         <p>
           Reader submissions are written by the people who send them in, and

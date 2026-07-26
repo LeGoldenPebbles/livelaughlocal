@@ -4,6 +4,7 @@ import { SITE } from '@/lib/constants';
 export const metadata = {
   title: 'Cookies',
   description: `${SITE.name} sets no third-party cookies today. Here is the whole story, and it is a short one.`,
+  alternates: { canonical: '/cookies' },
 };
 
 export default function CookiesPage() {

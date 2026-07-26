@@ -4,6 +4,7 @@ export const metadata = {
   title: 'Submit a story',
   description:
     'Send us your local event write-up - markets, fairs, food and days out across the UK. Free to submit, reviewed by a human editor.',
+  alternates: { canonical: '/submit' },
 };
 
 export default function SubmitPage() {

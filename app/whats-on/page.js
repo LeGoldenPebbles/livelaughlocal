@@ -9,6 +9,7 @@ export const metadata = {
   title: "What's on near you - live local event listings",
   description:
     'Markets, fairs, food events and days out across the UK, built from live listings on Spaces Please and refreshed all the time.',
+  alternates: { canonical: '/whats-on' },
 };
 
 const DATE_OPTS = { day: 'numeric', month: 'short' };

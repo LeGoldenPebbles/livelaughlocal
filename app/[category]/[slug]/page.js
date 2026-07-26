@@ -26,14 +26,20 @@ export async function generateMetadata({ params }) {
   const title = doc.seo?.metaTitle || doc.title;
   const description = doc.seo?.metaDesc || doc.dek;
   const heroUrl = absoluteHero(doc);
+  // Canonical uses the article's CURRENT category, not the requested one, so a
+  // re-shelved article never competes with its own old URL. Share links carry
+  // utm parameters, which would otherwise look like duplicate pages.
+  const path = `/${doc.category}/${doc.slug}`;
   return {
     title,
     description,
     ...(doc.tags?.length ? { keywords: doc.tags } : {}),
+    alternates: { canonical: path },
     openGraph: {
       title,
       description,
       type: 'article',
+      url: path,
       ...(heroUrl ? { images: [heroUrl] } : {}),
     },
   };

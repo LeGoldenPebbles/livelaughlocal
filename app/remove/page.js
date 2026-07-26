@@ -4,6 +4,7 @@ export const metadata = {
   title: 'Remove your article',
   description:
     'Submitted an article to Live Laugh Local and want it taken down? Request a one-click removal link here.',
+  alternates: { canonical: '/remove' },
 };
 
 export default async function RemovePage({ searchParams }) {
