@@ -93,6 +93,19 @@ Articles without a hero are fine - the branded site card covers social shares.
 `images.remotePatterns` ON THE DEPLOYED BUILD before any live article
 references it. Config first, verify live, then data.
 
+**Never point an article at a multi-MB remote original.** Next decodes the whole
+source image into memory to optimise it, so a 4600px Wikimedia file costs ~45MB
+of raw pixels per request. Googlebot-Image crawling six of those OOM killed the
+service on 26 July 2026. After sourcing any remote photo, run:
+
+```bash
+node scripts/rehost-heroes.mjs --dry   # see sizes
+node scripts/rehost-heroes.mjs         # resize to 1600px into R2, repoint articles
+```
+
+It skips images already on our own host, so it is safe to re-run any time.
+Resizing does not affect CC attribution - the credit line stays as it is.
+
 ## Statuses that surface money
 
 `featured.active + featured.until` drive the sponsored feed card and the
