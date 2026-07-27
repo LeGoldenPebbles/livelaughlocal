@@ -19,13 +19,43 @@ const absoluteHero = (doc) => {
   return url.startsWith('/') ? `${SITE.url}${url}` : url;
 };
 
+/**
+ * The image a share should use.
+ *
+ * NOT the hero. Facebook renders a large image card only above 600x315 and
+ * wants 1200x630; our heroes are whatever shape the source photo was, and
+ * several were portrait or square (543x768, 768x768), which Facebook demotes to
+ * a small thumbnail or drops entirely. scripts/make-social-cards.mjs builds a
+ * real 1200x630 card per article and stores it here.
+ *
+ * Width and height are emitted explicitly, because without them Facebook has to
+ * fetch and measure the image itself, and the FIRST share of a URL frequently
+ * renders with no image at all while that happens.
+ */
+const socialImage = (doc) => {
+  const social = doc.heroImage && doc.heroImage.social;
+  if (social?.url) {
+    return { url: social.url, width: social.width || 1200, height: social.height || 630 };
+  }
+  const fallback = absoluteHero(doc);
+  return fallback ? { url: fallback } : null;
+};
+
 export async function generateMetadata({ params }) {
   const { category, slug } = await params;
   const doc = await getArticle(slug);
   if (!doc || doc.category !== category) return {};
   const title = doc.seo?.metaTitle || doc.title;
   const description = doc.seo?.metaDesc || doc.dek;
-  const heroUrl = absoluteHero(doc);
+  const cat = getCategory(doc.category);
+  const share = socialImage(doc);
+  const image = share
+    ? {
+        url: share.url,
+        ...(share.width ? { width: share.width, height: share.height } : {}),
+        alt: doc.heroImage?.alt || doc.title,
+      }
+    : null;
   // Canonical uses the article's CURRENT category, not the requested one, so a
   // re-shelved article never competes with its own old URL. Share links carry
   // utm parameters, which would otherwise look like duplicate pages.
@@ -40,7 +70,19 @@ export async function generateMetadata({ params }) {
       description,
       type: 'article',
       url: path,
-      ...(heroUrl ? { images: [heroUrl] } : {}),
+      siteName: SITE.name,
+      locale: 'en_GB',
+      ...(doc.publishedAt ? { publishedTime: new Date(doc.publishedAt).toISOString() } : {}),
+      ...(doc.updatedAt ? { modifiedTime: new Date(doc.updatedAt).toISOString() } : {}),
+      ...(cat ? { section: cat.name } : {}),
+      ...(doc.tags?.length ? { tags: doc.tags } : {}),
+      ...(image ? { images: [image] } : {}),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      ...(image ? { images: [image.url] } : {}),
     },
   };
 }

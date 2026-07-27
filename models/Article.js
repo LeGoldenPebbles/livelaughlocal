@@ -10,6 +10,14 @@ const ArticleSchema = new mongoose.Schema(
       url: String,
       alt: String,
       credit: String,
+      // Dedicated 1200x630 share card built by scripts/make-social-cards.mjs.
+      // Declared here or Mongoose strips it on any re-save through the model,
+      // silently reverting shares to the wrongly-shaped hero.
+      social: {
+        url: String,
+        width: Number,
+        height: Number,
+      },
     },
     bodyHtml: { type: String, required: true },
     category: { type: String, enum: CATEGORY_SLUGS, required: true, index: true },

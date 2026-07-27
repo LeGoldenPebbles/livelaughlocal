@@ -168,7 +168,12 @@ const ArticleSchema = new mongoose.Schema(
     title: { type: String, required: true, trim: true, maxlength: 120 },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
     dek: { type: String, required: true, trim: true, maxlength: 160 },
-    heroImage: { url: String, alt: String, credit: String },
+    heroImage: {
+      url: String,
+      alt: String,
+      credit: String,
+      social: { url: String, width: Number, height: Number },
+    },
     bodyHtml: { type: String, required: true },
     category: { type: String, enum: CATEGORY_SLUGS, required: true },
     locations: [{ type: String, trim: true }],
@@ -210,9 +215,30 @@ const s3 = new S3Client({
   },
 });
 
+async function put(key, body) {
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: env.R2_BUCKET,
+      Key: key,
+      Body: body,
+      ContentType: 'image/jpeg',
+      ContentDisposition: 'inline',
+      CacheControl: 'public, max-age=31536000, immutable',
+    })
+  );
+  return `https://${env.R2_PUBLIC_HOST}/${key}`;
+}
+
+/**
+ * Rehost the hero into R2 at a sane size, AND build the 1200x630 share card.
+ *
+ * The card is not optional. Facebook renders a large image card only above
+ * 600x315 and wants 1.91:1; article heroes are whatever shape the photograph
+ * happened to be, and portrait or square ones get demoted to a thumbnail or
+ * dropped, which reads as "sharing does not pick up the image".
+ */
 async function rehost(slug, directUrl) {
   if (!directUrl) return null;
-  if (new URL(directUrl).hostname === env.R2_PUBLIC_HOST) return directUrl;
 
   const res = await fetch(directUrl, {
     headers: { 'User-Agent': 'LiveLaughLocal/1.0 (hello@spacesplease.com)' },
@@ -220,30 +246,40 @@ async function rehost(slug, directUrl) {
   if (!res.ok) throw new Error(`hero fetch ${res.status} for ${slug}`);
   const inputBuf = Buffer.from(await res.arrayBuffer());
   const meta = await sharp(inputBuf).metadata();
+
   const output = await sharp(inputBuf)
     .rotate()
     .resize({ width: MAX_WIDTH, withoutEnlargement: true })
     .jpeg({ quality: 82, mozjpeg: true })
     .toBuffer();
 
-  const key = `heroes/${slug}-${crypto.randomBytes(3).toString('hex')}.jpg`;
+  // Too small to crop without turning to mush: letterbox onto brand paper.
+  const bigEnough = meta.width >= 1000 && meta.height >= 525;
+  const card = await (bigEnough
+    ? sharp(inputBuf)
+        .rotate()
+        .resize({ width: 1200, height: 630, fit: 'cover', position: sharp.strategy.attention })
+    : sharp(inputBuf).rotate().resize({
+        width: 1200,
+        height: 630,
+        fit: 'contain',
+        background: { r: 247, g: 242, b: 234, alpha: 1 },
+      })
+  )
+    .jpeg({ quality: 82, mozjpeg: true })
+    .toBuffer();
+
   console.log(
     `   hero ${meta.width}x${meta.height} ${(inputBuf.length / 1048576).toFixed(1)}MB` +
-      ` -> max${MAX_WIDTH} ${(output.length / 1024).toFixed(0)}KB`
+      ` -> max${MAX_WIDTH} ${(output.length / 1024).toFixed(0)}KB` +
+      ` | share card 1200x630 ${bigEnough ? 'cover' : 'letterbox'} ${(card.length / 1024).toFixed(0)}KB`
   );
-  if (DRY) return `https://${env.R2_PUBLIC_HOST}/${key} (dry)`;
+  if (DRY) return { url: `https://${env.R2_PUBLIC_HOST}/heroes/${slug} (dry)`, social: null };
 
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: env.R2_BUCKET,
-      Key: key,
-      Body: output,
-      ContentType: 'image/jpeg',
-      ContentDisposition: 'inline',
-      CacheControl: 'public, max-age=31536000, immutable',
-    })
-  );
-  return `https://${env.R2_PUBLIC_HOST}/${key}`;
+  const rand = crypto.randomBytes(3).toString('hex');
+  const url = await put(`heroes/${slug}-${rand}.jpg`, output);
+  const socialUrl = await put(`social/${slug}-${rand}.jpg`, card);
+  return { url, social: { url: socialUrl, width: 1200, height: 630 } };
 }
 
 const articles = JSON.parse(fs.readFileSync(path.resolve(input), 'utf8'));
@@ -302,9 +338,9 @@ for (const a of articles) {
     continue;
   }
 
-  let heroUrl = null;
+  let hero = null;
   try {
-    heroUrl = await rehost(a.slug, a.hero?.directUrl);
+    hero = await rehost(a.slug, a.hero?.directUrl);
   } catch (err) {
     console.log(`   FAIL ${err.message}`);
     failed += 1;
@@ -325,12 +361,13 @@ for (const a of articles) {
     emailConfirmed: false,
     viewCount: 0,
     seo: { metaTitle: a.metaTitle, metaDesc: a.metaDesc },
-    ...(heroUrl
+    ...(hero
       ? {
           heroImage: {
-            url: heroUrl,
+            url: hero.url,
             alt: a.heroAlt || '',
             credit: [a.hero?.credit, a.hero?.licence].filter(Boolean).join(', '),
+            ...(hero.social ? { social: hero.social } : {}),
           },
         }
       : {}),
