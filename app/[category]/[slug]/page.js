@@ -61,13 +61,29 @@ export default async function ArticlePage({ params }) {
     getMostRead({ limit: 5 }),
   ]);
 
+  // Google News asks for a clear, visible date AND time on article pages, not
+  // just a date, and wants it visually separated from the first sentence.
   const published = doc.publishedAt
-    ? new Date(doc.publishedAt).toLocaleDateString('en-GB', {
+    ? new Date(doc.publishedAt).toLocaleString('en-GB', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/London',
       })
     : '';
+  const updated =
+    doc.updatedAt && doc.publishedAt && new Date(doc.updatedAt) - new Date(doc.publishedAt) > 60 * 60 * 1000
+      ? new Date(doc.updatedAt).toLocaleString('en-GB', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'Europe/London',
+        })
+      : '';
   const firstLocation = doc.locations?.[0];
 
   const jsonLd = {
@@ -75,12 +91,17 @@ export default async function ArticlePage({ params }) {
     // NewsArticle site-wide: this is a news magazine, and it is the schema
     // type Google's news surfaces (News tab, Top Stories, Discover) expect.
     '@type': 'NewsArticle',
-    headline: doc.title,
-    ...(doc.publishedAt ? { datePublished: doc.publishedAt } : {}),
+    // Google truncates headlines past ~110 characters in news surfaces.
+    headline: doc.title.length > 110 ? `${doc.title.slice(0, 107).trimEnd()}...` : doc.title,
+    ...(doc.dek ? { description: doc.dek } : {}),
+    inLanguage: 'en-GB',
+    isAccessibleForFree: true,
+    ...(doc.publishedAt ? { datePublished: new Date(doc.publishedAt).toISOString() } : {}),
     ...(doc.updatedAt || doc.publishedAt
-      ? { dateModified: doc.updatedAt || doc.publishedAt }
+      ? { dateModified: new Date(doc.updatedAt || doc.publishedAt).toISOString() }
       : {}),
     ...(cat ? { articleSection: cat.name } : {}),
+    ...(doc.tags?.length ? { keywords: doc.tags.join(', ') } : {}),
     author:
       doc.byline?.kind === 'staff'
         ? {
@@ -88,17 +109,33 @@ export default async function ArticlePage({ params }) {
             name: doc.byline?.name || 'Live Laugh Local team',
             url: `${SITE.url}/about`,
           }
-        : { '@type': 'Person', name: doc.byline?.name || 'Contributor' },
+        : {
+            '@type': 'Person',
+            name: doc.byline?.name || 'Contributor',
+            url: `${SITE.url}/about`,
+          },
     ...(absoluteHero(doc) ? { image: [absoluteHero(doc)] } : {}),
+    // NewsMediaOrganization rather than a bare Organization: this is a news
+    // publisher, and it is the type Google's news surfaces expect.
     publisher: {
-      '@type': 'Organization',
+      '@type': 'NewsMediaOrganization',
       name: SITE.name,
+      url: SITE.url,
       logo: {
         '@type': 'ImageObject',
         url: `${SITE.url}/linelogo.png`,
       },
+      parentOrganization: {
+        '@type': 'Organization',
+        name: 'Spaces Please Ltd',
+        identifier: '16518769',
+        url: 'https://spacesplease.com',
+      },
     },
-    mainEntityOfPage: `${SITE.url}/${category}/${slug}`,
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `${SITE.url}/${category}/${slug}`,
+    },
   };
 
   return (
@@ -132,13 +169,27 @@ export default async function ArticlePage({ params }) {
           <p className="mt-4 text-lg leading-relaxed text-ink-soft">{doc.dek}</p>
 
           <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-line pb-5 text-sm text-ink-faint">
-            <span className="font-medium text-ink-soft">
+            {/* The byline links to the page that says who we are and how these
+                articles are made. Google asks news sources for a link that
+                uniquely identifies the author, not a bare name. */}
+            <Link
+              href={doc.byline?.kind === 'staff' ? '/about' : '/about'}
+              className="font-medium text-ink-soft underline-offset-2 hover:underline"
+            >
               {doc.byline?.name || 'Live Laugh Local team'}
-            </span>
+            </Link>
             {published && (
               <>
                 <span aria-hidden="true">·</span>
                 <time dateTime={doc.publishedAt}>{published}</time>
+              </>
+            )}
+            {updated && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>
+                  Updated <time dateTime={doc.updatedAt}>{updated}</time>
+                </span>
               </>
             )}
             {firstLocation && (

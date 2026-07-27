@@ -53,9 +53,27 @@ export default async function SiteFooter() {
             </ul>
           </div>
         </div>
-        <p className="mt-10 border-t border-line pt-6 text-xs text-ink-faint">
-          © {new Date().getFullYear()} Live Laugh Local. Part of Spaces Please Ltd.
-        </p>
+        {/* Google's news transparency policy asks for information about the
+            company behind the content and a contact route, and UK trading
+            disclosure rules require the company number regardless. */}
+        <div className="mt-10 space-y-2 border-t border-line pt-6 text-xs text-ink-faint">
+          <p>
+            © {new Date().getFullYear()} Live Laugh Local. Published by Spaces Please Ltd,
+            registered in England and Wales, company number 16518769.
+          </p>
+          <p>
+            Editorial enquiries and corrections:{' '}
+            <a href="mailto:hello@spacesplease.com" className="hover:text-coral-deep">
+              hello@spacesplease.com
+            </a>
+            . Articles are researched and drafted with AI assistance and reviewed by a person
+            before publication.{' '}
+            <Link href="/about" className="hover:text-coral-deep">
+              How we work
+            </Link>
+            .
+          </p>
+        </div>
       </div>
     </footer>
   );

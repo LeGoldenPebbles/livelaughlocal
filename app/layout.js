@@ -40,12 +40,32 @@ export const metadata = {
     : {}),
 };
 
+// NewsMediaOrganization, not a plain Organization: Google's news surfaces read
+// this to work out who publishes the site, and the transparency policy asks for
+// identifiable ownership and a contact route.
 const orgJsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'Organization',
+  '@type': 'NewsMediaOrganization',
   name: SITE.name,
   url: SITE.url,
-  parentOrganization: { '@type': 'Organization', name: 'Spaces Please Ltd' },
+  logo: { '@type': 'ImageObject', url: `${SITE.url}/linelogo.png` },
+  email: 'hello@spacesplease.com',
+  ethicsPolicy: `${SITE.url}/about`,
+  publishingPrinciples: `${SITE.url}/about`,
+  foundingDate: '2026',
+  parentOrganization: {
+    '@type': 'Organization',
+    name: 'Spaces Please Ltd',
+    identifier: '16518769',
+    url: 'https://spacesplease.com',
+    address: { '@type': 'PostalAddress', addressCountry: 'GB' },
+  },
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'editorial',
+    email: 'hello@spacesplease.com',
+    url: `${SITE.url}/contact`,
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -57,6 +77,18 @@ export default function RootLayout({ children }) {
           {children}
         </main>
         <SiteFooter />
+        {/* Feed autodiscovery, rendered rather than declared through the
+            metadata API on purpose. Page-level `alternates` (we set a canonical
+            on every route) shallowly REPLACES the layout's alternates object,
+            so a metadata-declared feed link would silently disappear from every
+            page that has a canonical, which is all of them. React hoists this
+            into the head. */}
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title={`${SITE.name} - latest stories`}
+          href={`${SITE.url}/rss.xml`}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
