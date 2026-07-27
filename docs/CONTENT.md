@@ -48,6 +48,11 @@ schema first. This exact bug (a 161-char metaDesc) broke an approval in prod.
 
 ## Editorial rules
 
+> **See also [NEWS_COMPLIANCE.md](NEWS_COMPLIANCE.md)** - the per-article
+> checklist for Google News eligibility, and the enforcement built into
+> `scripts/publish-batch.mjs`. This section is the house voice; that document is
+> the compliance floor.
+
 - UK English, warm local-paper tone. **No em or en dashes - hyphens only.**
 - Clickbait headlines are allowed and encouraged for news, but must be 100%
   honest - the body must deliver exactly what the headline promises.

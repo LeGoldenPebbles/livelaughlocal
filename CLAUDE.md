@@ -101,6 +101,26 @@ current one (slug is globally unique). Full rules: docs/CONTENT.md.
 ### House style
 British English. No em dashes - use hyphens. Warm, concrete, local-paper tone.
 
+### Article compliance - READ BEFORE WRITING OR PUBLISHING ANY ARTICLE
+**`docs/NEWS_COMPLIANCE.md`** is the standing checklist, verified against
+Google's own documentation on 27 Jul 2026. It covers headline and field limits,
+sourcing, images, the transparency rules Google News names explicitly, the
+Spaces Please conflict-of-interest rule, and cadence.
+
+Publish ONLY via the validating publisher, which enforces the mechanical half
+and refuses to write if anything fails:
+
+```bash
+node scripts/publish-batch.mjs <articles.json> --dry --check-links
+node scripts/publish-batch.mjs <articles.json> --check-links
+```
+
+Three things that are widely believed and are NOT true, so nobody wastes a day
+on them again: you **cannot** submit this site to Google News (that flow was
+deleted in April 2024, inclusion is automatic); AI-assisted writing is **not** a
+policy breach (scaled content abuse is, and that is about volume-to-value); and
+blocking `Google-Extended` does **not** remove us from AI Overviews.
+
 ---
 
 ## Commands
