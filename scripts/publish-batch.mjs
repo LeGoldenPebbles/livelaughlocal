@@ -157,8 +157,15 @@ function complianceCheck(a, body) {
   return { errors, warnings, external };
 }
 
+// Statuses that mean "this server does not like robots", NOT "this page is
+// gone". Blocking a publish on these produces false failures: the Science
+// Museum returns 405 to an automated GET on a page that loads perfectly in a
+// browser, and Cloudflare-fronted sites routinely return 403.
+const BOT_BLOCKED = new Set([401, 403, 405, 429, 503, 999]);
+
 async function checkLinks(urls) {
   const dead = [];
+  const blocked = [];
   for (const url of urls) {
     try {
       const res = await fetch(url, {
@@ -166,18 +173,21 @@ async function checkLinks(urls) {
         headers: {
           'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-GB,en;q=0.9',
         },
         signal: AbortSignal.timeout(20000),
       });
-      // 403 is usually a WAF turning away a script, not a dead page. 404 and
-      // 410 are real. Anything else 4xx/5xx is worth a look.
+      if (res.ok) continue;
+      // 404 and 410 are unambiguous: the page is not there.
       if (res.status === 404 || res.status === 410) dead.push(`${res.status} ${url}`);
-      else if (!res.ok && res.status !== 403) dead.push(`${res.status} ${url}`);
+      else if (BOT_BLOCKED.has(res.status)) blocked.push(`${res.status} ${url}`);
+      else dead.push(`${res.status} ${url}`);
     } catch (err) {
       dead.push(`unreachable ${url} (${err.message})`);
     }
   }
-  return dead;
+  return { dead, blocked };
 }
 
 // Mirror of models/Article.js. Kept deliberately verbose: if the real model
@@ -372,9 +382,15 @@ for (const a of articles) {
   const { errors, warnings, external } = complianceCheck(a, body);
   for (const w of warnings) console.log(`   warn ${w}`);
   if (CHECK_LINKS) {
-    const dead = await checkLinks(external);
+    const { dead, blocked } = await checkLinks(external);
     for (const d of dead) errors.push(`dead outbound link: ${d}`);
-    if (!dead.length) console.log(`   OK ${external.length} outbound link(s) resolve`);
+    // Reported, never fatal. Spot-check these by hand if a batch looks off.
+    for (const b of blocked) console.log(`   note bot-blocked, not verified: ${b}`);
+    if (!dead.length) {
+      console.log(
+        `   OK ${external.length - blocked.length}/${external.length} outbound link(s) verified`
+      );
+    }
   }
   if (errors.length) {
     console.log('   FAIL compliance:');
