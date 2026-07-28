@@ -62,6 +62,26 @@ const ALLOWED_TAGS = new Set([
   'p', 'h2', 'h3', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'blockquote', 'br',
 ]);
 
+// Words too common in our headlines to say anything about whether two articles
+// are the same story.
+const STOPWORDS = new Set([
+  'the', 'and', 'for', 'you', 'your', 'what', 'when', 'where', 'how', 'why',
+  'with', 'from', 'that', 'this', 'are', 'now', 'its', 'uk', 'plus', 'best',
+  'guide', 'new', 'out', 'get', 'all', 'can', 'but', 'not', 'has', 'have',
+]);
+
+function titleWords(title) {
+  return [
+    ...new Set(
+      String(title)
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter((w) => w.length > 2 && !STOPWORDS.has(w))
+    ),
+  ];
+}
+
 /**
  * The mechanical half of docs/NEWS_COMPLIANCE.md.
  *
@@ -289,7 +309,7 @@ await mongoose.connect(env.MONGODB_URI);
 // slugs in this batch so the batch may cross-link itself.
 const live = await mongoose.connection
   .collection('articles')
-  .find({ status: 'published' }, { projection: { slug: 1, category: 1 } })
+  .find({ status: 'published' }, { projection: { slug: 1, category: 1, title: 1 } })
   .toArray();
 const valid = new Set([
   ...STATIC_ROUTES,
@@ -319,6 +339,31 @@ for (const a of articles) {
     .filter((h) => !valid.has(h));
   if (broken.length) {
     console.log(`   FAIL broken internal links: ${broken.join(', ')}`);
+    failed += 1;
+    continue;
+  }
+
+  // Near-duplicate guard. An exact-slug check is not enough: a re-run that
+  // regenerates the same commission produces a DIFFERENT slug for the same
+  // story ("christmas-market-stall-applications..." vs "christmas-fair-stall-
+  // applications..."), which would sail through and publish the same article
+  // twice. That is textbook scaled-content abuse, self-inflicted.
+  const overlap = live
+    .filter((d) => d.category === a.category)
+    .map((d) => {
+      const mine = new Set(titleWords(a.title));
+      const theirs = titleWords(d.title || '');
+      if (!theirs.length) return { slug: d.slug, score: 0 };
+      const shared = theirs.filter((w) => mine.has(w)).length;
+      return { slug: d.slug, score: shared / Math.max(mine.size, theirs.length) };
+    })
+    .filter((x) => x.score >= 0.5)
+    .sort((x, y) => y.score - x.score);
+  if (overlap.length) {
+    console.log(
+      `   FAIL looks like a duplicate of /${a.category}/${overlap[0].slug}` +
+        ` (${Math.round(overlap[0].score * 100)}% title overlap)`
+    );
     failed += 1;
     continue;
   }
