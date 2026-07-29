@@ -27,6 +27,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
 import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import mongoose from 'mongoose';
 import sharp from 'sharp';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
@@ -184,10 +185,36 @@ async function checkLinks(urls) {
       else if (BOT_BLOCKED.has(res.status)) blocked.push(`${res.status} ${url}`);
       else dead.push(`${res.status} ${url}`);
     } catch (err) {
-      dead.push(`unreachable ${url} (${err.message})`);
+      // Node's fetch is stricter about TLS than a browser is, and throws on
+      // hosts that work fine in practice: cheesefestival.ticketsrv.co.uk threw
+      // "fetch failed" while curl got a clean 200. Falling back to curl before
+      // calling a link dead, because a false dead-link failure blocks a publish
+      // for no reason and trains you to skip the check.
+      const viaCurl = curlStatus(url);
+      if (viaCurl >= 200 && viaCurl < 400) continue;
+      if (viaCurl === 404 || viaCurl === 410) dead.push(`${viaCurl} ${url}`);
+      else if (BOT_BLOCKED.has(viaCurl)) blocked.push(`${viaCurl} ${url}`);
+      else dead.push(`unreachable ${url} (${err.message}${viaCurl ? `, curl ${viaCurl}` : ''})`);
     }
   }
   return { dead, blocked };
+}
+
+// Second opinion for hosts Node's fetch refuses to talk to. Returns 0 if curl
+// is unavailable or also fails.
+function curlStatus(url) {
+  try {
+    const out = execFileSync(
+      'curl',
+      ['-s', '-o', '/dev/null', '-w', '%{http_code}', '-L', '--max-time', '20',
+       '-A', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+       url],
+      { encoding: 'utf8', timeout: 25000, stdio: ['ignore', 'pipe', 'ignore'] }
+    );
+    return parseInt(out.trim(), 10) || 0;
+  } catch {
+    return 0;
+  }
 }
 
 // Mirror of models/Article.js. Kept deliberately verbose: if the real model
