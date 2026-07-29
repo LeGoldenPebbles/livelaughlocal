@@ -1,9 +1,49 @@
 # Live Laugh Local - Development Guide
 
-UK local-events magazine (markets, fairs, food events, days out). AI-generated
-editorial grounded in REAL Spaces Please event data + public submissions with a
-paid "Featured" tier. **PLAN.md in this repo is the full build spec - read it
-before changing anything structural.**
+> ## START HERE
+>
+> **Read [HANDOVER.md](HANDOVER.md) first.** It carries the current state of the
+> site, the five things that have already broken production, the article
+> pipeline, the honest compliance position (10 known failures), and the list of
+> things only the owner can do. It is written to bring a fresh session up to
+> speed without archaeology.
+>
+> Then, before writing or publishing any article, read
+> [docs/NEWS_COMPLIANCE.md](docs/NEWS_COMPLIANCE.md).
+
+UK local-events magazine (markets, fairs, food events, days out). AI-assisted
+editorial grounded in primary sources and real Spaces Please event data, plus
+public submissions with a paid "Featured" tier. **PLAN.md in this repo is the
+full build spec - read it before changing anything structural.**
+
+**Owner is not a developer.** Explain what happened and what it means, not a
+diff. Say plainly when something is not done, not verified, or not worth doing.
+
+---
+
+## The loop, every time
+
+1. **Commission** - edit `COMMISSIONS` in the workflow script (hardcoded on
+   purpose; passing it through `args` failed silently once and produced
+   duplicates). Deepen categories rather than widening; all 28 have cover.
+2. **Write, then verify** - one hostile checker per article, always. It has
+   caught an invented product, a doctored quote, a double-counted deposit and
+   wrong event dates. Not optional, even on a quick batch.
+3. **Publish** - `node scripts/publish-batch.mjs <file.json> --check-links`.
+   Never a hand-rolled insert; schemaless writes skip validation and produce rows
+   the admin cannot re-save.
+4. **Audit** - `node scripts/audit-corpus.mjs` after any rule change, and before
+   telling anyone the site is compliant.
+5. **Verify against the live URL**, not the local build. `SITE_URL` is localhost
+   in dev, so canonicals look wrong locally and are right in production.
+
+**Before trusting any check, prove it can fail.** Three checks passed while
+broken in a single day because nothing complained. Feed each one known-bad input
+first, then confirm it does not false-fail on known-good input.
+
+**Cadence: 2 to 3 articles a week, sustained.** Bursts are the one metric here
+that pattern-matches scaled content abuse. The owner may ask for more, which is
+their call, but say so rather than letting the rule become decoration.
 
 ---
 
@@ -169,3 +209,24 @@ See `.env.example` for the full annotated list. Secrets live in `.env.local`
    TOKEN_SECRET/ADMIN_KEY requires updating LLL_TOKEN_SECRET/LLL_ADMIN_KEY on
    both Spaces Please backends or the command centre goes dark
    (docs/ADMIN.md).
+6. **Node does not know it is in a 512MB container.** V8 sizes its heap from the
+   HOST machine, never feels memory pressure, and the container OOM-kills it
+   first. This killed the service twice (26 and 28 July 2026), the second time
+   after a clean 16-hour staircase from 114MB to 511MB. Fixed with the Render
+   env var `NODE_OPTIONS=--max-old-space-size=300`. **Set this again on any new
+   service or plan change.** The image-rehosting work reduced the slope but was
+   never the root cause.
+7. **Page-level `alternates` REPLACES the layout's, it does not merge.** We set a
+   canonical on every route, so a feed-autodiscovery link declared through the
+   metadata API disappears from every page. It is rendered as a `<link>` in
+   app/layout.js on purpose. Do not tidy it into metadata.
+8. **`heroImage.social` must stay declared in models/Article.js.** Mongoose
+   strips undeclared fields on save, so an admin re-save silently reverts every
+   social share to the wrongly-shaped hero image. Shares need a 1200x630 card;
+   Facebook demotes anything under 600x315 to a thumbnail or drops it.
+9. **Pushing to main does NOT deploy.** Public repo, no Render webhook. Every
+   deploy is a manual `POST /v1/services/srv-d9h2f1mpbkes73c1uc30/deploys`.
+   Publishing an article needs no deploy (ISR, revalidate 300).
+10. **Render log retention is short.** `GET /v1/logs` returns `logs: null` for
+   windows more than about an hour old, so pull logs DURING an incident, not
+   after. Memory metrics take `startTime`/`endTime` only, no `resolution`.

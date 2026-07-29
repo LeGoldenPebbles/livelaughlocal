@@ -59,6 +59,10 @@ const env = Object.fromEntries(
 const MAX_WIDTH = 1600;
 const STATIC_ROUTES = new Set(['/', '/whats-on', '/submit', '/about', '/contact', '/terms', '/privacy', '/cookies', '/remove']);
 
+// Above this word count an article is a feature and must carry sourced quotes;
+// below it, it is a short listing piece and legitimately has none.
+const FEATURE_WORDS = 700;
+
 const ALLOWED_TAGS = new Set([
   'p', 'h2', 'h3', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'blockquote', 'br',
 ]);
@@ -112,9 +116,14 @@ function complianceCheck(a, body) {
     (words < 700 || words > 1100 ? errors : warnings).push(`body is ${words} words, target 800 to 950`);
   }
 
-  // A named, sourced quote is the thing a generic model cannot fake.
+  // A named, sourced quote is the thing a generic model cannot fake, so feature
+  // articles need two. Short listing pieces ("market comes to X on Saturday")
+  // legitimately have none: there is nobody to quote about a stall booking.
+  // The threshold is what separates the two in practice.
   const quotes = (body.match(/<blockquote>/g) || []).length;
-  if (quotes < 2) errors.push(`${quotes} blockquote(s), at least 2 required`);
+  if (words >= FEATURE_WORDS && quotes < 2) {
+    errors.push(`${quotes} blockquote(s), at least 2 required for a feature`);
+  }
 
   const h2 = (body.match(/<h2>/g) || []).length;
   if (h2 < 3 || h2 > 5) warnings.push(`${h2} h2 headings, target 3 to 5`);
@@ -147,9 +156,21 @@ function complianceCheck(a, body) {
   const internal = [...body.matchAll(/href="(\/[^"]*)"/g)].map((m) => m[1]);
   if (internal.length < 2) warnings.push(`${internal.length} internal link(s), target 2 to 4`);
 
-  // Conflict of interest: one mention, not a drumbeat.
-  const spMentions = (body.match(/spacesplease\.com/g) || []).length;
-  if (spMentions > 1) errors.push(`Spaces Please linked ${spMentions} times, maximum is 1`);
+  // Conflict of interest, and the distinction matters.
+  //
+  // A link to the Spaces Please HOMEPAGE is promotion of our owner's commercial
+  // product, so one per article at most. That is the thing Google's policy on
+  // "sponsored content presented as independent editorial" is about.
+  //
+  // A link to a specific /events/<slug> page is a CITATION. When a listings
+  // article says a market is on this Saturday, the event page is the source,
+  // exactly as an organiser's own site would be for any other event. Capping
+  // those would mean sourcing our claims worse, not better.
+  const spLinks = [...body.matchAll(/href="https:\/\/spacesplease\.com([^"]*)"/g)].map((m) => m[1]);
+  const promo = spLinks.filter((p) => !p.startsWith('/events/')).length;
+  if (promo > 1) {
+    errors.push(`Spaces Please homepage linked ${promo} times, maximum is 1 (event-page citations are unlimited)`);
+  }
 
   if (a.metaDesc && (a.metaDesc.length < 120 || a.metaDesc.length > 160)) {
     warnings.push(`metaDesc ${a.metaDesc.length} chars, target 140 to 158`);
