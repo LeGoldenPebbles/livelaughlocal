@@ -241,15 +241,37 @@ canonicals render as localhost in a local build and correctly in production.
 ## Deploys
 
 **Pushing to `main` does NOT deploy.** The repo is public and Render has no
-webhook on it. Every deploy is a manual API call:
+webhook on it. Every deploy is a manual API call.
+
+Credentials live in **`.env.local`**, which is gitignored (`.gitignore` line 5,
+`.env.*`). **This repo is PUBLIC - never commit or echo these.**
+
+```
+RENDER_API_KEY      full-account token: also reaches the Spaces Please services
+RENDER_SERVICE_ID   srv-d9h2f1mpbkes73c1uc30
+RENDER_OWNER_ID     tea-d2dfm1qdbo4c73beh5rg
+```
+
+Quickest health check, no arguments needed:
 
 ```bash
-TOKEN=<render token>
+node scripts/render-status.mjs      # deploys, OOM kills, memory vs the 512MB limit
+```
+
+To deploy:
+
+```bash
+TOKEN=$(grep -oE '^RENDER_API_KEY=.*' .env.local | cut -d= -f2)
 curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{}' https://api.render.com/v1/services/srv-d9h2f1mpbkes73c1uc30/deploys
 ```
 
 Poll `GET /v1/services/{id}/deploys?limit=1` until `status` is `live`.
+
+**Read the token into a variable, never print it.** It can deploy to, and rewrite
+environment variables on, production Spaces Please as well as this site. If it
+ever leaks, rotate it in the Render dashboard and update `.env.local` here plus
+`server/.env.production.secure` in the Spaces Please repo.
 
 **Publishing an article does not need a deploy.** Articles are database rows
 served through ISR with `revalidate = 300`, so a new article appears within about
