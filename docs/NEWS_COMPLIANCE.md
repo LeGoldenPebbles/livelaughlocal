@@ -150,10 +150,22 @@ automation.
 
 ## Structured data
 
-- `NewsArticle` for genuinely time-sensitive dated pieces.
-- `Article` or `BlogPosting` for evergreen guides. **Currently every article
-  emits `NewsArticle`, including evergreen guides like "how to book your first
-  market stall". This is a known mismatch and an open decision.**
+Driven by `articleType` on the article (`models/Article.js`), set at write time.
+**Resolved 29 July 2026** - this was previously a known mismatch, with every
+article emitting `NewsArticle` regardless of what it was.
+
+| `articleType` | schema.org `@type` | In the news sitemap? |
+|---|---|---|
+| `news` | `NewsArticle` | yes, for 48 hours |
+| `listing` | `Article` | no |
+| `guide` | `Article` | no |
+
+- **A what's-on listing is not news.** Dates in it are the subject, not a peg.
+  Only 7 of the first 39 articles were genuinely news; the rest were 27 listings
+  and 5 guides. Filing listings as news claims news volume we do not have, which
+  is the shape scaled-content enforcement looks for.
+- The default is `listing`, deliberately. Wrongly missing the news sitemap is a
+  far smaller harm than wrongly claiming `NewsArticle`.
 - Publisher and the site entity are `NewsMediaOrganization`.
 - `datePublished` / `dateModified` in ISO 8601. Headline capped at 110.
 - Validate at <https://search.google.com/test/rich-results>.
@@ -163,7 +175,7 @@ automation.
 | Thing | Where | Rule that bites |
 |---|---|---|
 | Canonical | every route | page-level `alternates` REPLACES the layout's, it does not merge |
-| News sitemap | `app/news-sitemap.xml/route.js` | last 48 hours only, max 1,000 entries, empty is fine |
+| News sitemap | `app/news-sitemap.xml/route.js` | `articleType: 'news'` only, last 48 hours, max 1,000 entries; usually empty, and that is fine |
 | RSS | `app/rss.xml/route.js` | RFC-822 dates not ISO; media namespace URI ends in a slash |
 | Feed autodiscovery | rendered in `app/layout.js` | must NOT be declared via the metadata API, see canonical rule |
 | robots.txt | `app/robots.js` | a specific group REPLACES `User-agent: *`; disallows must be repeated |

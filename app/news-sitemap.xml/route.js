@@ -44,6 +44,15 @@ export async function GET() {
     articles = await Article.find(
       {
         status: 'published',
+        // Genuine news only. Most of what this site publishes is a what's-on
+        // listing: time-bound, but nothing was announced in it, so it is not
+        // news and does not belong in a news sitemap. Filing listings here
+        // would be claiming news volume we do not have, which is the shape
+        // scaled-content enforcement looks for.
+        //
+        // Consequence, and it is intended: this file is empty most weeks.
+        // Google says explicitly that an empty news sitemap is fine.
+        articleType: 'news',
         publishedAt: { $gte: new Date(Date.now() - NEWS_WINDOW_MS) },
       },
       { slug: 1, category: 1, title: 1, publishedAt: 1 }

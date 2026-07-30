@@ -20,6 +20,32 @@ const ArticleSchema = new mongoose.Schema(
       },
     },
     bodyHtml: { type: String, required: true },
+    /**
+     * What kind of article this is. Drives the JSON-LD @type and whether the
+     * piece belongs in the Google News sitemap.
+     *
+     *   news    - something was announced, confirmed, cancelled, priced, fined,
+     *             closed or consulted on, with a date attached. NewsArticle.
+     *   listing - what's on: events, dates, prices, deadlines. Time-bound but
+     *             nothing was announced, so it is NOT news. Article.
+     *   guide   - evergreen how-to. The answer barely moves. Article.
+     *
+     * Defaults to `listing` deliberately. It is the commonest shape here, it is
+     * what a public submission almost always is, and being wrongly left out of
+     * the news sitemap is a far smaller harm than wrongly claiming NewsArticle
+     * on 32 of 39 articles, which is what we did before this field existed.
+     *
+     * `listing` and `guide` both emit Article today. They stay separate values
+     * because the editorial difference is real (a listing rots on a date, a
+     * guide is updated in place) and because listings are where ItemList markup
+     * would go if we ever add it.
+     */
+    articleType: {
+      type: String,
+      enum: ['news', 'listing', 'guide'],
+      default: 'listing',
+      index: true,
+    },
     category: { type: String, enum: CATEGORY_SLUGS, required: true, index: true },
     locations: [{ type: String, trim: true }],
     tags: [{ type: String, trim: true }],

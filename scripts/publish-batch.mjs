@@ -67,6 +67,10 @@ const ALLOWED_TAGS = new Set([
   'p', 'h2', 'h3', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'blockquote', 'br',
 ]);
 
+// Must match the enum in models/Article.js.
+const ARTICLE_TYPES = new Set(['news', 'listing', 'guide']);
+const DEFAULT_TYPE = 'listing';
+
 // Words too common in our headlines to say anything about whether two articles
 // are the same story.
 const STOPWORDS = new Set([
@@ -102,6 +106,18 @@ function complianceCheck(a, body) {
   const warnings = [];
   const text = body.replace(/<[^>]+>/g, ' ');
   const words = text.split(/\s+/).filter(Boolean).length;
+
+  // Which of the three this is drives the JSON-LD @type and whether it enters
+  // the news sitemap, so a typo must not silently fall back to the default.
+  // Absent is tolerated (it defaults to a listing, the safe option); wrong is
+  // not.
+  if (a.articleType && !ARTICLE_TYPES.has(a.articleType)) {
+    errors.push(
+      `articleType "${a.articleType}" is not one of: ${[...ARTICLE_TYPES].join(', ')}`
+    );
+  } else if (!a.articleType) {
+    warnings.push(`no articleType, treating as "${DEFAULT_TYPE}" (not news, not in the news sitemap)`);
+  }
 
   // Google truncates news headlines past ~110 characters.
   if (a.title.length > 110) {
@@ -253,6 +269,7 @@ const ArticleSchema = new mongoose.Schema(
       social: { url: String, width: Number, height: Number },
     },
     bodyHtml: { type: String, required: true },
+    articleType: { type: String, enum: [...ARTICLE_TYPES], default: DEFAULT_TYPE },
     category: { type: String, enum: CATEGORY_SLUGS, required: true },
     locations: [{ type: String, trim: true }],
     tags: [{ type: String, trim: true }],
@@ -461,6 +478,7 @@ for (const a of articles) {
     slug: a.slug,
     dek: a.dek,
     bodyHtml: body,
+    articleType: a.articleType || DEFAULT_TYPE,
     category: a.category,
     locations: a.locations || [],
     tags: a.tags || [],

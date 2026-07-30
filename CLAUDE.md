@@ -142,10 +142,17 @@ current one (slug is globally unique). Full rules: docs/CONTENT.md.
 British English. No em dashes - use hyphens. Warm, concrete, local-paper tone.
 
 ### Article compliance - READ BEFORE WRITING OR PUBLISHING ANY ARTICLE
-**`docs/NEWS_COMPLIANCE.md`** is the standing checklist, verified against
-Google's own documentation on 27 Jul 2026. It covers headline and field limits,
-sourcing, images, the transparency rules Google News names explicitly, the
-Spaces Please conflict-of-interest rule, and cadence.
+**Writing one? Use the `journalist-article` skill**
+(`.claude/skills/journalist-article/`). It is the working guide: which of the two
+kinds you are writing (time-pegged news vs evergreen guide), what has to be in
+the piece, the exact limits the publisher enforces, image sourcing and credit
+(including generating a house graphic when no free photo exists), and the
+verify-then-publish loop.
+
+**`docs/NEWS_COMPLIANCE.md`** is the standing checklist behind it, verified
+against Google's own documentation on 27 Jul 2026. It covers headline and field
+limits, sourcing, images, the transparency rules Google News names explicitly,
+the Spaces Please conflict-of-interest rule, and cadence.
 
 Publish ONLY via the validating publisher, which enforces the mechanical half
 and refuses to write if anything fails:

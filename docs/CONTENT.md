@@ -26,12 +26,33 @@ published → draft (unpublish) · removed (removal request / admin)
 | `seo.metaDesc` | 160 chars |
 | `byline.name` | 80 chars |
 | `category` | must be one of the 28 taxonomy slugs |
+| `articleType` | `news` \| `listing` \| `guide`, default `listing` |
 
 **Landmine:** raw `updateOne`/schemaless inserts bypass Mongoose validation,
 but the admin publish action re-saves through the real model - an over-limit
 field inserted by a script will make PUBLISHING fail later with a generic 500.
 Any script that inserts articles must run `doc.validate()` against the real
 schema first. This exact bug (a 161-char metaDesc) broke an approval in prod.
+
+## Article type (news vs listing vs guide)
+
+`articleType` decides the schema.org `@type` on the page and whether the piece
+enters the Google News sitemap. One test: **was something announced, confirmed,
+cancelled, priced, fined, closed or consulted on, with a date attached?**
+
+- `news` - yes. Emits `NewsArticle`, enters the news sitemap for 48 hours.
+- `listing` - no, but still time-bound. What's on, dates, prices, deadlines.
+  Emits `Article`, stays out of the news sitemap. **The default, and the
+  commonest shape here.**
+- `guide` - no, and the calendar barely matters. Emits `Article`.
+
+**A what's-on article is not news.** A date in a listing is the subject; a date in
+news is the peg. Of the first 39 articles, 7 were news, 27 listings, 5 guides -
+and all 39 claimed `NewsArticle` until this was fixed on 29 July 2026.
+`scripts/backfill-article-type.mjs` records the classification and its reasoning.
+
+Expect the news sitemap to be empty most weeks. That is intended, and Google says
+an empty news sitemap is fine.
 
 ## Taxonomy rules
 

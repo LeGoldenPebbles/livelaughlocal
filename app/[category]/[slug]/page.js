@@ -11,6 +11,14 @@ import OutboundClicks from '@/components/OutboundClicks';
 
 export const revalidate = 300;
 
+// models/Article.js articleType -> schema.org @type. `listing` and `guide`
+// share Article; they are separate editorially, not structurally.
+const SCHEMA_TYPE = {
+  news: 'NewsArticle',
+  listing: 'Article',
+  guide: 'Article',
+};
+
 // House graphics live under /news in public/ and are stored as relative URLs -
 // absolutise them for anything leaving the site (og, JSON-LD).
 const absoluteHero = (doc) => {
@@ -130,9 +138,11 @@ export default async function ArticlePage({ params }) {
 
   const jsonLd = {
     '@context': 'https://schema.org',
-    // NewsArticle site-wide: this is a news magazine, and it is the schema
-    // type Google's news surfaces (News tab, Top Stories, Discover) expect.
-    '@type': 'NewsArticle',
+    // Only genuine news claims NewsArticle. A what's-on roundup is time-bound
+    // but nothing was announced in it, and an evergreen guide is not news at
+    // all, so both are plain Articles. Claiming NewsArticle on everything is
+    // what this site did until 29 July 2026, on 32 of 39 articles.
+    '@type': SCHEMA_TYPE[doc.articleType] || SCHEMA_TYPE.listing,
     // Google truncates headlines past ~110 characters in news surfaces.
     headline: doc.title.length > 110 ? `${doc.title.slice(0, 107).trimEnd()}...` : doc.title,
     ...(doc.dek ? { description: doc.dek } : {}),

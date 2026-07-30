@@ -26,6 +26,10 @@ for (const d of pub) {
   if (!d.heroImage?.url) e.push('no hero');
   if (!d.heroImage?.alt) e.push('no alt');
   if (!d.heroImage?.social?.url) e.push('no share card');
+  // An unset type reads as a listing at render time, which is the safe default,
+  // but it means nobody decided. Genuine news then silently loses NewsArticle
+  // and never enters the news sitemap.
+  if (!['news','listing','guide'].includes(d.articleType)) e.push('articleType:'+(d.articleType||'unset'));
   if (words>=FEATURE_WORDS && (b.match(/<blockquote>/g)||[]).length<2) e.push('feature with <2 quotes');
   if (/[–—]/.test(JSON.stringify(d))) e.push('em/en dash');
   const bad=[...new Set([...b.matchAll(/<\s*\/?\s*([a-zA-Z0-9]+)/g)].map(m=>m[1].toLowerCase()))].filter(t=>!ALLOWED.has(t));
@@ -37,7 +41,8 @@ for (const d of pub) {
   if (e.length) fails.push(`${d.category}/${d.slug}\n      ${e.join('; ')}`);
   else if (w.length) warns.push(`${d.slug}: ${w.join('; ')}`);
 }
-console.log(`published ${pub.length} | categories ${new Set(pub.map(p=>p.category)).size}/${CATEGORY_SLUGS.length}`);
+const mix = ['news','listing','guide'].map(t=>`${t}=${pub.filter(p=>p.articleType===t).length}`).join(' ');
+console.log(`published ${pub.length} | categories ${new Set(pub.map(p=>p.category)).size}/${CATEGORY_SLUGS.length} | ${mix}`);
 console.log(`FAILING: ${fails.length}`);
 fails.forEach(f=>console.log('   ', f));
 console.log(fails.length ? '' : '   none - corpus is compliant');

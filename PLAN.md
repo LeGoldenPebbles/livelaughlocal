@@ -189,9 +189,12 @@ linked nowhere). Deliberately boring:
   `eventwebsite` database, projection limited to public event fields (title, dates,
   venue town, category, description, public image, slug). Never PII, never write
   access. Direct DB read avoids Cloudflare's AI-bot 403 wall entirely.
-- **Journalist skill** (`.claude/skills/journalist-article`): inverted pyramid,
-  600-900 words, British English, dek + meta + image alt required, facts ONLY from
-  the supplied event JSON, no invented quotes, no em dashes.
+- **Journalist skill** (`.claude/skills/journalist-article`): the working guide to
+  writing a piece. News vs evergreen, required ingredients, the machine-enforced
+  limits, image sourcing and credit, and the verify-then-publish loop. Grounding
+  has since widened beyond the events API to researched primary sources, and the
+  hard floor is now 800-950 words with two named, sourced quotes - the skill is
+  the current word, this line is a pointer.
 - **Vertical pipeline (one article):**
   researcher (pull events by region/category) -> writer (skill) -> fact-checker
   (verify every date, venue and claim against the source JSON; any mismatch kills
