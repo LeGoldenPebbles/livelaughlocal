@@ -54,7 +54,32 @@ changes and how to date a guide so it does not rot.
 
 ---
 
-## 2. What has to be in it
+## 2. Researching it
+
+Three rules, each of which cost real time on the batch published on 1 August 2026.
+
+**Search finds the page. The page is the source.** Never write a number from a
+search summary. Search said an adult anytime ticket for Christmas at Kew was £61;
+Kew's own page says "Tickets from £25.50". Search quoted prices for Christmas at
+the Botanics; the venue publishes none. Both would have been published as fact.
+
+**A 403 is not a dead end.** Kew, Longleat, Birmingham City Council and the
+Financial Ombudsman all refuse the fetch tool and return a clean 200 to curl:
+
+```bash
+curl -s -L --max-time 25 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" "<url>" -o page.html
+```
+
+Then strip the tags and read it. If you skip this you end up writing from search
+summaries, which is the previous rule's failure mode.
+
+**Never guess a URL.** Four venue URLs guessed from an obvious pattern all 404'd.
+Search for the real one, then open it. The same rule that applies to internal
+links applies to your sources.
+
+---
+
+## 3. What has to be in it
 
 Every article carries all of these. **The order is your judgement** - the list is
 what must be present, not a template to fill top to bottom.
@@ -102,7 +127,7 @@ practicals (entry, parking, dogs, accessibility), how to go or how to get a pitc
 
 ---
 
-## 3. Voice
+## 4. Voice
 
 British English. Warm, concrete, plain. Write for someone deciding whether to go
 to, book into, or run an event.
@@ -127,7 +152,7 @@ violation, not just bad manners.
 
 ---
 
-## 4. Images
+## 5. Images
 
 Every article needs a hero, and rights are absolute. Work down this ladder and
 stop at the first one that genuinely fits.
@@ -162,7 +187,7 @@ graphic - there is a real gotcha about relative URLs.
 
 ---
 
-## 5. Spaces Please
+## 6. Spaces Please
 
 Ownership is disclosed in the footer and on `/about`, and the article template
 adds a discreet credit line to every piece. Do not add louder disclosure inside
@@ -177,7 +202,7 @@ the body; the owner removed one.
 
 ---
 
-## 6. Output
+## 7. Output
 
 Return one JSON object per article, in exactly this shape. This is what
 `scripts/publish-batch.mjs` reads.
@@ -215,7 +240,7 @@ under `seo` or `heroImage`. The publisher assembles those itself.
 
 ---
 
-## 7. The limits that are machine-enforced
+## 8. The limits that are machine-enforced
 
 `scripts/publish-batch.mjs` refuses the whole batch on any of these. Full table,
 including the softer warnings, in [references/contract.md](references/contract.md).
@@ -240,7 +265,7 @@ Every publishable article needs its two quotes.
 
 ---
 
-## 8. Verify, then publish
+## 9. Verify, then publish
 
 The checker is not optional and not ceremony. In recent batches it caught an
 invented product a reader could have turned up for, a doctored quote from a named

@@ -36,6 +36,22 @@ Wikimedia Commons CC BY, CC BY-SA, or public domain. Nothing else.
 
 - Prefer wide scene shots. Avoid close-ups of identifiable private individuals.
 
+Search the Commons API rather than guessing file URLs. It returns the licence,
+the author and the direct file URL together, which is everything the credit line
+needs:
+
+```bash
+curl -s -G "https://commons.wikimedia.org/w/api.php" \
+  --data-urlencode "action=query" --data-urlencode "format=json" \
+  --data-urlencode "generator=search" --data-urlencode "gsrnamespace=6" \
+  --data-urlencode "gsrsearch=street food market stall UK" \
+  --data-urlencode "prop=imageinfo" --data-urlencode "iiprop=url|size|extmetadata"
+```
+
+Filter the results yourself on `LicenseShortName` (accept only CC BY, CC BY-SA,
+CC0 or public domain) and on width, and ignore anything that is not a photograph:
+a plain text search will happily return scanned PDFs.
+
 ## 3. Make one
 
 When no honest photograph exists - tech, money, weather, policy, abstract news -

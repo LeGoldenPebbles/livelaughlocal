@@ -14,6 +14,14 @@ In recent batches a single hostile pass caught:
 - a **quote attributed to a page that did not contain it**
 - **alt text describing a photograph that did not exist**
 
+On the batch published on 1 August 2026 the same pass caught, in the writer's own
+draft: a **headline claiming peak nights are Saturdays** when the venue publishes
+peak and off-peak prices but not which dates are which; a **family-of-four total
+of £25** that was actually £29; and an **unsourced claim** that organisers require
+a hygiene rating of 3 or above. None of these came from a source being wrong. All
+three were invented in the writing, which is exactly the class of error a
+source-by-source check misses unless you look for it.
+
 ---
 
 ## The hostile checker
@@ -46,7 +54,13 @@ writing. It must be able to fetch pages.
 >    actually in it?
 > 10. Claims subtly stronger than the source supports: "the biggest", "the first",
 >     "all", "always".
-> 11. Does the headline promise exactly what the body delivers?
+> 11. **Every number the writer worked out rather than copied.** Differences,
+>     totals, percentages and per-person figures are not in any source, so no
+>     source check will catch them. Recompute each one.
+> 12. **The headline and dek, checked against the sources like any other claim.**
+>     Does the body deliver exactly what they promise, and is every fact in them
+>     sourced? A headline that asserts something the article cannot support is a
+>     Google "misleading content" violation, not a style problem.
 >
 > Report only real problems, each with the exact fix.
 
