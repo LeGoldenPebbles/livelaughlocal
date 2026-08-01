@@ -52,16 +52,64 @@ treats the piece as a `listing`, which is safe but means nobody decided. Read
 [references/article-types.md](references/article-types.md) for what each one
 changes and how to date a guide so it does not rot.
 
+### The batch mix
+
+The owner's standing shape for a batch is **one news, one breaking, one normal
+piece** (a listing or a guide). Aim for it.
+
+**With one honest limit: breaking news cannot be commissioned, only found.**
+`breaking-news` is for stories that genuinely broke in the last day or two,
+verified against the source's own publication date, and it renders a pulsing
+BREAKING badge everywhere the article appears. Filing a week-old story there to
+fill the slot is the single most visible way to look automated, and it devalues
+the badge for the times something really has happened.
+
+So: go looking for a breaking story every batch. If one is genuinely there, take
+it. If nothing broke, **say so and file a second news or listing piece instead**,
+rather than dressing up something stale. An empty breaking slot is a fact about
+the week, not a failure of the batch.
+
 ---
 
-## 2. Researching it
+## 2. Research, then check the research
 
-Three rules, each of which cost real time on the batch published on 1 August 2026.
+Research is a stage with its own output and its own checkpoint. It is not
+something you do in your head on the way to writing. **Nothing from a search
+result is a fact until you have opened the page and seen it.**
+
+### Build a source ledger before you write a word
+
+One row per claim you intend to make: the claim, the URL you opened, and the
+wording on the page. Anything that has no row does not go in the article.
+
+| Claim | Source URL | Verbatim on the page |
+|---|---|---|
+| Kew tickets from £25.50 | kew.org/.../christmas | "Tickets from £25.50" |
+| Section 75 lower limit £100 | financial-ombudsman.org.uk/... | "must cost more than £100" |
+
+### Then check the ledger, before writing
+
+Go back through it adversarially, because a wrong number here becomes 900 words
+built on sand:
+
+1. Did you actually open every URL, or did some rows come from a search summary?
+2. Does the page still say it today, in the year you are writing about?
+3. For every quote: is the speaker named, is the job title right, and does the
+   page contain those exact words?
+4. What is on the page that contradicts your row? Search summaries paraphrase,
+   and paraphrase drops caveats.
+5. Which rows are missing? Anything you are about to assert without a row is
+   either cut or explicitly flagged as unverified.
+
+That check is cheap and it is the one that pays. On the 1 August 2026 batch,
+search reported an adult Christmas at Kew ticket as £61 when Kew's own page says
+"Tickets from £25.50", and quoted Edinburgh Botanics prices the venue does not
+publish at all. Both would have been published as fact.
+
+### The three rules that produce the ledger
 
 **Search finds the page. The page is the source.** Never write a number from a
-search summary. Search said an adult anytime ticket for Christmas at Kew was £61;
-Kew's own page says "Tickets from £25.50". Search quoted prices for Christmas at
-the Botanics; the venue publishes none. Both would have been published as fact.
+search summary.
 
 **A 403 is not a dead end.** Kew, Longleat, Birmingham City Council and the
 Financial Ombudsman all refuse the fetch tool and return a clean 200 to curl:
@@ -200,6 +248,31 @@ the body; the owner removed one.
   is on this Saturday, the event page is your source, exactly as an organiser's
   own site would be. Capping those would mean sourcing your claims worse.
 
+### Writing about an organiser who uses Spaces Please
+
+This comes up, and the line is sharp.
+
+**Fine:** a piece about their events. Seven craft fairs are coming to Lowestoft
+and Beccles this autumn, here are the dates, venues and which are taking
+stallholder applications. Every fact is checkable on the event pages, it helps
+readers, it helps the organiser, and it would be worth publishing whatever
+platform they used.
+
+**Not fine:** a piece about how well the platform is working for them.
+"Applications are flying in" is an unverifiable commercial claim about our
+owner's product, in our own magazine, presented as editorial. That is the exact
+thing Google's policy on sponsored content presented as independent editorial
+describes, and it is this site's most plausible exposure.
+
+The test: **would this article still be worth publishing if the organiser used a
+different platform?** If yes, write it. If the story only exists because they use
+ours, it is marketing, and it belongs on spacesplease.com.
+
+And the absolute rule underneath it: **an organiser's quotes must be words they
+actually said.** Not a plausible paraphrase of what they would probably say. If
+you do not have their real words, either get them or write the piece without
+quoting them.
+
 ---
 
 ## 7. Output
@@ -266,6 +339,17 @@ Every publishable article needs its two quotes.
 ---
 
 ## 9. Verify, then publish
+
+The full pipeline, and none of the middle is optional:
+
+```
+research -> check the ledger -> write -> hostile check -> fix -> dry run -> publish
+```
+
+There are two checkpoints on purpose. The ledger check catches a wrong fact
+before it is load-bearing. The hostile check catches what the writing invented,
+which is a different class of error entirely and is invisible to a
+source-by-source pass.
 
 The checker is not optional and not ceremony. In recent batches it caught an
 invented product a reader could have turned up for, a doctored quote from a named
