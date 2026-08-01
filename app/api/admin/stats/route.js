@@ -6,6 +6,7 @@ import DailyUnique from '@/models/DailyUnique';
 import RefStat from '@/models/RefStat';
 import RemovalRequest from '@/models/RemovalRequest';
 import ClickStat from '@/models/ClickStat';
+import VisitorHit from '@/models/VisitorHit';
 import { isAdminRequest } from '@/lib/adminAuth';
 import { CATEGORY_SLUGS } from '@/lib/constants';
 
@@ -37,6 +38,7 @@ export async function GET(request) {
       featuredCharged,
       featuredActiveNow,
       outboundClicks,
+      visits,
     ] = await Promise.all([
       Article.aggregate([{ $group: { _id: '$status', n: { $sum: 1 } } }]),
       Article.aggregate([
@@ -79,6 +81,15 @@ export async function GET(request) {
         { $sort: { count: -1 } },
         { $limit: 12 },
       ]),
+      // One array of paths per visitor per day, in order. Everything about
+      // journeys is derived from this: where they land, whether they read a
+      // second piece, which article sends them onward, where they leave.
+      VisitorHit.aggregate([
+        { $match: { day: { $gte: since30 } } },
+        { $sort: { at: 1 } },
+        { $group: { _id: { day: '$day', hash: '$hash' }, paths: { $push: '$path' } } },
+        { $limit: 5000 },
+      ]),
     ]);
 
     const counts = {};
@@ -98,8 +109,44 @@ export async function GET(request) {
       }
     }
 
+    // Journeys. A "visit" is one visitor hash on one day, which is as far as a
+    // cookieless daily-rotating hash can honestly reach.
+    const tally = (m) =>
+      [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k, n]) => ({ path: k, count: n }));
+    const entries = new Map();
+    const exits = new Map();
+    const hops = new Map();
+    let single = 0;
+    let depthTotal = 0;
+    for (const v of visits) {
+      const p = v.paths || [];
+      if (!p.length) continue;
+      depthTotal += p.length;
+      if (p.length === 1) single += 1;
+      entries.set(p[0], (entries.get(p[0]) || 0) + 1);
+      exits.set(p[p.length - 1], (exits.get(p[p.length - 1]) || 0) + 1);
+      for (let i = 1; i < p.length; i += 1) {
+        if (p[i] === p[i - 1]) continue;
+        const key = `${p[i - 1]} > ${p[i]}`;
+        hops.set(key, (hops.get(key) || 0) + 1);
+      }
+    }
+    const journeys = {
+      visits: visits.length,
+      // Percentage of visits that read exactly one page and left.
+      bounceRate: visits.length ? Math.round((single / visits.length) * 100) : 0,
+      pagesPerVisit: visits.length ? Number((depthTotal / visits.length).toFixed(2)) : 0,
+      entryPages: tally(entries),
+      exitPages: tally(exits),
+      topHops: [...hops.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 15)
+        .map(([k, n]) => ({ from: k.split(' > ')[0], to: k.split(' > ')[1], count: n })),
+    };
+
     return NextResponse.json({
       counts,
+      journeys,
       totalViews: viewAgg[0]?.total || 0,
       viewsByDay: pvByDay.map((d) => ({ day: d._id, count: d.count })),
       uniquesByDay: uniquesByDay.map((d) => ({ day: d._id, count: d.count })),

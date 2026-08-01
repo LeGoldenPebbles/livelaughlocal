@@ -3,6 +3,7 @@ import dbConnect from '@/lib/db';
 import PageView from '@/models/PageView';
 import DailyUnique from '@/models/DailyUnique';
 import RefStat from '@/models/RefStat';
+import VisitorHit from '@/models/VisitorHit';
 import Article from '@/models/Article';
 import { CATEGORY_SLUGS } from '@/lib/constants';
 
@@ -44,6 +45,13 @@ export async function POST(request) {
           { upsert: true }
         )
       );
+
+      // One row per view against the same daily hash, so a journey can be
+      // reconstructed: landing page, second article, where they left. PageView
+      // is a per-path counter and can never answer that. Same hash, so no new
+      // identifier and no change to the cookieless position; rows expire after
+      // 30 days via a TTL index.
+      ops.push(VisitorHit.create({ day, hash, path, at: new Date() }));
     }
 
     // Referrer source: external hostname or 'direct'. Internal navigation is
