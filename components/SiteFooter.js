@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import CookieChoices from '@/components/CookieChoices';
 import Image from 'next/image';
 import { SITE } from '@/lib/constants';
 import { getActiveCategories } from '@/lib/articles';
@@ -49,6 +50,9 @@ export default async function SiteFooter() {
               <li><Link href="/terms" className="hover:text-coral-deep">Terms</Link></li>
               <li><Link href="/privacy" className="hover:text-coral-deep">Privacy</Link></li>
               <li><Link href="/cookies" className="hover:text-coral-deep">Cookies</Link></li>
+              {/* Renders only when Google's certified consent message is
+                  actually live, so it is never a dead link. */}
+              <CookieChoices />
               <li><Link href="/remove" className="hover:text-coral-deep">Remove an article</Link></li>
             </ul>
           </div>
