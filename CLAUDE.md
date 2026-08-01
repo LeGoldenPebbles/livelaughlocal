@@ -127,6 +127,17 @@ current one (slug is globally unique). Full rules: docs/CONTENT.md.
    Privacy & messaging consent message is configured in the AdSense account
    (certified CMP - Google enforces this). Do not add any other third-party
    script casually.
+   **The consent message is still unpublished, and it is measured, not assumed**
+   (1 Aug 2026, real browser, en-GB): zero ads render, `__tcfapi` fails, every
+   `googlefc` status is `UNKNOWN`, and `FCCDCF` is set for 390 days on entry.
+   So the site earns nothing and cookies everyone. Owner-only fix, with our
+   branding values pre-filled: docs/ADSENSE_CONSENT.md. Do not build a custom
+   banner instead - an uncertified CMP does not make ad serving lawful in the
+   UK, so it would be decoration over the same problem.
+   `NEXT_PUBLIC_ADSENSE_PAUSED=true` drops the script and the cookie while
+   keeping site verification, but is deliberately OFF by default: whether that
+   is free depends on the account's approval state, which is only visible in
+   the dashboard.
 4. **`NOINDEX=true` until livelaughlocal.co.uk is attached** - never let Google
    index a temporary domain.
 5. **Removal/confirm links are stateless HMAC tokens** (`lib/tokens.js`),
