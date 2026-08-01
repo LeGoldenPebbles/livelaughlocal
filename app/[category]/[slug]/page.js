@@ -107,7 +107,7 @@ export default async function ArticlePage({ params }) {
 
   const cat = getCategory(category);
   const [related, mostRead] = await Promise.all([
-    getRelated(doc, 3),
+    getRelated(doc, 6),
     getMostRead({ limit: 5 }),
   ]);
 
@@ -190,10 +190,40 @@ export default async function ArticlePage({ params }) {
     },
   };
 
+  // Breadcrumbs. Google uses these to render the category path in results
+  // instead of a bare URL, and they give every article a crawlable link back up
+  // to its section and the homepage. The site had none.
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+      ...(cat
+        ? [{ '@type': 'ListItem', position: 2, name: cat.name, item: `${SITE.url}/${doc.category}` }]
+        : []),
+      {
+        '@type': 'ListItem',
+        position: cat ? 3 : 2,
+        name: doc.title,
+        item: `${SITE.url}/${doc.category}/${doc.slug}`,
+      },
+    ],
+  };
+
   return (
     <div className="flex gap-10">
       <div className="min-w-0 flex-1">
         <article className="mx-auto max-w-article" data-article-body>
+          <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-sm">
+          <Link
+            href="/"
+            className="text-ink-faint underline-offset-2 transition-colors hover:text-coral-deep hover:underline"
+          >
+            Home
+          </Link>
+          <span aria-hidden="true" className="text-ink-faint">
+            /
+          </span>
           {cat && category === 'breaking-news' ? (
             <Link
               href={`/${category}`}
@@ -213,6 +243,7 @@ export default async function ArticlePage({ params }) {
               {cat.name}
             </Link>
           ) : null}
+          </nav>
 
           <h1 className="mt-4 font-display text-3xl leading-tight sm:text-4xl">
             {doc.title}
@@ -309,6 +340,10 @@ export default async function ArticlePage({ params }) {
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
           />
 
           {related.length > 0 && (
