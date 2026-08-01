@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import PvBeacon from '@/components/PvBeacon';
 import Image from 'next/image';
 import { fetchEventsByRegion, fetchRegionIndex } from '@/lib/spEvents';
 import NearMe from '@/components/NearMe';
@@ -159,6 +160,7 @@ export default async function WhatsOnPage() {
           </section>
         </>
       )}
+      <PvBeacon path={'/whats-on'} />
     </div>
   );
 }

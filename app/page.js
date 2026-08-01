@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import PvBeacon from '@/components/PvBeacon';
 import { getFeed, getFeaturedArticles, getMostRead, getActiveCategories } from '@/lib/articles';
 import { fetchRegionIndex } from '@/lib/spEvents';
 import { SITE } from '@/lib/constants';
@@ -94,6 +95,7 @@ export default async function HomePage() {
           </div>
         </aside>
       </div>
+      <PvBeacon path={'/'} />
     </div>
   );
 }

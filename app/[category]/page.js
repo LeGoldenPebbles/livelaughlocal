@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import PvBeacon from '@/components/PvBeacon';
 import { CATEGORY_SLUGS, getCategory } from '@/lib/constants';
 import { getFeed, getFeaturedArticles, getMostRead } from '@/lib/articles';
 import FeedWithAds from '@/components/FeedWithAds';
@@ -68,6 +69,7 @@ export default async function CategoryPage({ params }) {
           </div>
         </aside>
       </div>
+      <PvBeacon path={category ? `/${category}` : "/"} />
     </div>
   );
 }
