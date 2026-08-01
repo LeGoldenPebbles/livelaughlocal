@@ -234,6 +234,16 @@ See `.env.example` for the full annotated list. Secrets live in `.env.local`
 9. **Pushing to main does NOT deploy.** Public repo, no Render webhook. Every
    deploy is a manual `POST /v1/services/srv-d9h2f1mpbkes73c1uc30/deploys`.
    Publishing an article needs no deploy (ISR, revalidate 300).
-10. **Render log retention is short.** `GET /v1/logs` returns `logs: null` for
+10. **Cloudflare now caches page HTML at the edge for 5 minutes** (cache rule on
+   the zone, added 1 Aug 2026, `/api/`, `/admin`, `/submit`, `/remove` and
+   `/contact` excluded). This is what stops a crawler burst reaching Render and
+   OOM-killing it. Two consequences: a code deploy can serve stale HTML for up
+   to 5 minutes ON TOP of ISR, and a published article can take that much longer
+   to appear. After any deploy you care about, purge:
+   `POST /client/v4/zones/5d150cb80afffb75f327c75e907bf808/purge_cache` with
+   `{"purge_everything":true}`. Also on the zone: rate limiting blocks an IP
+   doing more than 20 page requests in 10 seconds, so any script that walks the
+   site must sleep at least ~700ms between requests.
+11. **Render log retention is short.** `GET /v1/logs` returns `logs: null` for
    windows more than about an hour old, so pull logs DURING an incident, not
    after. Memory metrics take `startTime`/`endTime` only, no `resolution`.
