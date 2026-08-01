@@ -47,7 +47,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function get(p) {
   const res = await fetch(`${BASE}${p}`, { headers: { 'User-Agent': UA }, redirect: 'follow' });
   const body = await res.text();
-  await sleep(250); // deliberate: never burst this service
+  // Deliberate, and it must stay above the Cloudflare rate limit: the zone
+  // blocks an IP doing more than 20 page requests in 10 seconds. At 250ms this
+  // audit ran at 40 per 10s and would block itself halfway through.
+  await sleep(700);
   return { status: res.status, body };
 }
 
@@ -183,6 +186,44 @@ if (aiBlocked.length) {
   console.log(`  fully blocked        ${aiBlocked.join(', ')}`);
   console.log('  Cloudflare-managed. No effect on Google, but these sites cannot');
   console.log('  cite us. Note Google-Extended does NOT affect Search or AI Overviews.');
+}
+
+/* 5b. per-article page checks ------------------------------------------ */
+// Only with --deep: this fetches every article page, one at a time. Links are
+// worthless if the canonical points somewhere else, and nothing else checks it.
+if (process.argv.includes('--deep')) {
+  console.log(`\nper-article checks     (${pub.length} pages, sequential)`);
+  let badCanonical = 0;
+  let noBreadcrumb = 0;
+  let thinRelated = 0;
+  for (const a of pub) {
+    const p = `/${a.category}/${a.slug}`;
+    const res = await get(p);
+    if (res.status !== 200) {
+      problems.push(`article ${res.status}: ${p}`);
+      continue;
+    }
+    const canon = res.body.match(/<link rel="canonical" href="([^"]+)"/);
+    if (!canon || canon[1] !== `${BASE}${p}`) {
+      problems.push(`canonical is ${canon ? canon[1] : 'missing'} on ${p}`);
+      badCanonical += 1;
+    }
+    if (!res.body.includes('"@type":"BreadcrumbList"')) {
+      problems.push(`no BreadcrumbList on ${p}`);
+      noBreadcrumb += 1;
+    }
+    // outbound links to other articles rendered on the page (related + most read)
+    const out = new Set(
+      pub.filter((o) => o.slug !== a.slug && res.body.includes(`/${o.category}/${o.slug}`)).map((o) => o.slug)
+    );
+    if (out.size < 3) {
+      problems.push(`only ${out.size} outbound article link(s) on ${p}`);
+      thinRelated += 1;
+    }
+  }
+  console.log(`  wrong canonical      ${badCanonical}`);
+  console.log(`  missing breadcrumb   ${noBreadcrumb}`);
+  console.log(`  under 3 outbound     ${thinRelated}`);
 }
 
 /* 6. rss --------------------------------------------------------------- */
