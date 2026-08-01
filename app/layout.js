@@ -32,6 +32,25 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
   },
+  // Licences Google to use the full-size image rather than a thumbnail. Every
+  // article already ships a correct 1200x630 card, and without this directive
+  // Google defaults to a small preview, which also makes the piece ineligible
+  // for the large-image card in Discover. For a what's-on publisher Discover is
+  // a realistic traffic source, so this is the asset we already have being left
+  // unlicensed. Safe at layout level: landmine 7 above is about `alternates`
+  // being REPLACED by page-level metadata, and robots merges field by field, so
+  // /admin's own noindex still wins where it is set.
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
+  },
   // Server-rendered into the raw <head> so Google's AdSense verifier can see
   // it - the adsbygoogle script itself is injected post-hydration by
   // AdSenseLoader, which the verification crawler cannot observe.
