@@ -1,86 +1,119 @@
-# The AdSense consent message (owner-only, 15 minutes)
+# AdSense: where we actually are, and the one owner-only step
 
-This is the single action that switches on both the cookie banner and the ad
-revenue, because in the UK the first is the precondition for the second.
+## The short version
 
-Nobody but the account holder can do it. There is no API, no env var and no
-code change that substitutes for it. Everything on our side is already in
-place and verified.
+The site is in AdSense status **"Getting ready"**, which means Google is
+reviewing it. Google's own wording: *"We're running some checks on your site.
+The review process usually takes a few days, but in some cases can take 2-4
+weeks."* **Ads do not display during that status.** ([Check the status of your
+AdSense sites](https://support.google.com/adsense/answer/12170222))
 
----
+So the correct action right now is mostly to wait, and specifically **not** to
+change any ad code. See the warning at the bottom.
 
-## What is actually happening right now
-
-Measured on the live site on 1 August 2026 with a real browser set to en-GB,
-on both the homepage and a 1,082-word article:
-
-| Check | Result | Means |
-|---|---|---|
-| `adsbygoogle.js` loads | yes | our code is correct |
-| `public/ads.txt` | HTTP 200, correct publisher line | correctly claimed |
-| Auto ads inject an ad slot | yes, 1 | Auto ads is switched on in the account |
-| That slot gets processed | **no** | Google declined to fill it |
-| Rendered ad iframes | **0** | **£0 being earned** |
-| `window.googlefc` exists | yes | Google's consent shell loaded |
-| `googlefc.getConsentStatus()` | `UNKNOWN` | it has no message to show |
-| `__tcfapi('getTCData')` | **fails** | the certified CMP never initialises |
-| TC string recorded | **none** | no consent, and no refusal, from anyone |
-| Consent dialog in the page | **0** | no banner is being shown to anyone |
-| Cookies set on a first visit, no interaction | `FCCDCF`, **390 days** | we cookie every visitor |
-
-Read together those lines say one thing: **the consent message was never
-published.** Google's CMP shell ships with the ad script, finds no message
-configured, never initialises, and Google then refuses to serve ads to UK and
-EEA visitors. That refusal has been Google policy since January 2024 and it is
-not negotiable or workaroundable.
-
-So the site currently gets the worst of both: no revenue, and a 390-day cookie
-dropped on every visitor before they have touched anything.
-
-### Why we cannot just build our own banner instead
-
-A banner we design ourselves would look better and take an afternoon, and it
-would not work. Google requires a **certified** CMP integrated with the IAB
-Transparency and Consent Framework for EEA and UK traffic. Ours would not be
-certified, so ads still would not serve. It would be decoration over the same
-problem.
-
-Google's own Privacy & messaging **is** certified, is already loading on the
-site, and can carry our logo, our colours and our words. Branding does not
-require building our own - it requires filling in the styling step below.
+The one thing worth doing in the meantime is confirming the consent message
+exists and is published, because the moment the status flips to "Ready" it
+becomes the thing standing between us and UK revenue.
 
 ---
 
-## Do we have the details needed?
+## A correction, so nobody re-runs this diagnosis
 
-Everything except one thing.
+On 1 Aug 2026 the live site was measured with a real browser at en-GB, on the
+homepage and on a 1,082-word article:
 
-| Needed | Have it? |
+| Check | Result |
 |---|---|
-| Publisher ID `ca-pub-1573259509891705` | yes, public, already in the page source and `ads.txt` |
-| `ads.txt` correctly served | yes, verified HTTP 200 |
-| Logo file for the banner | yes, `public/linelogo.png` (also live at `https://livelaughlocal.co.uk/linelogo.png`) |
-| Brand colours and copy | yes, filled in below |
-| Privacy and cookie policy URLs | yes, `/privacy` and `/cookies`, both live |
-| A "reopen the banner" control in the footer | yes, already built - it appears by itself the moment the message goes live |
-| **Being logged into the AdSense account** | **owner only** |
+| `adsbygoogle.js` loads | yes |
+| `public/ads.txt` | HTTP 200, correct publisher line |
+| Auto ads inject an ad slot | yes, 1 |
+| That slot gets processed | no |
+| Rendered ad iframes | 0 |
+| `window.googlefc` exists | yes |
+| `googlefc.getConsentStatus()` | `UNKNOWN` |
+| `__tcfapi('getTCData')` | fails |
+| TC string recorded | none |
+| Consent dialog in the page | 0 |
+| Cookies set on a first visit, no interaction | `FCCDCF`, 390 days |
 
-That last row is the whole blocker. It is a dashboard action.
+The measurements are accurate. **The conclusion drawn from them was not.** It
+was written up as proof that the consent message had never been published. It
+is not proof of that, because a site under review shows no ads regardless of
+consent configuration. The review status alone explains every zero in that
+table's top half.
+
+What the bottom half means is genuinely undetermined from outside. No consent
+dialog and a failing `__tcfapi` are consistent with **either**:
+
+- **A.** no GDPR message published in the account, or
+- **B.** a message that exists but is not being delivered yet, because the site
+  is not serving ads yet.
+
+There is no way to tell A from B from the outside. There **is** a way to tell in
+about thirty seconds from the inside, below.
 
 ---
 
-## The steps
+## The thirty-second check (owner only)
 
-1. Sign in to **adsense.google.com** with the account that owns
-   `ca-pub-1573259509891705`.
-2. Left-hand menu: **Privacy & messaging**.
-3. Choose **European regulations** (the GDPR message). This is the certified
-   one. The others - CCPA, cookie notice - are not a substitute for UK traffic.
-4. Select the site **livelaughlocal.co.uk**.
-5. **Consent options.** Include a *Do not consent* button. Google has required
-   it alongside *Consent* since January 2024, and UK law requires refusing to
-   be as easy as accepting. Do not settle for consent-plus-manage-options only.
-6. **Styling** - the part that makes it ours rather than a grey Google box:
+1. **adsense.google.com** → **Privacy & messaging** → **European regulations**.
+2. Look for a message covering `livelaughlocal.co.uk`.
+3. Look at whether it says **Published** or **Draft/Saved**.
+
+- **A message exists and says Published** → nothing to do. It is case B above,
+  and the banner will appear when the site starts serving.
+- **No message, or it is not published** → create and publish it. The steps and
+  our exact branding values are below. It takes about 15 minutes and it is worth
+  doing during the review rather than after, because otherwise the review
+  finishing does not actually turn on UK revenue.
+
+While in there, the **Sites** page also shows the ads.txt status. Ours should
+read **Authorized**; `public/ads.txt` is live and correct, so anything else is
+worth a look.
+
+---
+
+## What was already sorted, and what was never on our side to sort
+
+The engineering was all done in July and none of it needs revisiting:
+
+| | |
+|---|---|
+| `AdSenseLoader`, gated on the publisher ID | done (`a2a28d5`) |
+| `public/ads.txt` | done, verified HTTP 200 |
+| `google-adsense-account` meta server-rendered for the verifier | done (`a44ee6d`) |
+| Auto ads chosen over manual slots | done (`86812c9`, owner decision 23 Jul) |
+| Footer "Cookie choices" control to reopen the banner | done (`956f9e2`) |
+| Brand colours, logo, copy, policy URLs for the banner | ready, below |
+| **Publishing the consent message** | **dashboard action, never had a record of being done** |
+
+That last row is the only open item, and it has sat on the owner-only list since
+the handover was written. There is no commit or note claiming it was completed,
+which is not the same as saying it was not - hence the check above.
+
+### Why we cannot just build our own banner
+
+Worth recording because it comes up every time. A banner we design ourselves
+would look better and take an afternoon, and it would not work: Google requires
+a **certified** CMP integrated with the IAB Transparency and Consent Framework
+for EEA and UK traffic. Ours would not be certified, so ads still would not
+serve. It would be decoration over the same problem.
+
+Google's own Privacy & messaging **is** certified, already loads with the ad
+script, and takes our logo, colours and words. Branding does not require
+building our own.
+
+---
+
+## Publishing it, with our values filled in
+
+1. **Privacy & messaging** → **European regulations** (the GDPR message - the
+   certified one; a plain cookie notice is not a substitute for UK traffic).
+2. Select **livelaughlocal.co.uk**.
+3. **Consent options.** Include a *Do not consent* button. Google has required
+   it alongside *Consent* since January 2024, and UK law requires refusing to be
+   as easy as accepting.
+4. **Styling:**
 
    | Field | Value |
    |---|---|
@@ -90,60 +123,56 @@ That last row is the whole blocker. It is a dashboard action.
    | Accent / primary button | `#EF5A3C` (coral) |
    | Button hover / pressed | `#D14328` (coral deep) |
    | Link colour | `#D14328` |
-   | Font | Inter if offered, otherwise the default sans - do not pick a serif, Fraunces is for headlines only |
+   | Font | Inter if offered, otherwise the default sans - not a serif, Fraunces is for headlines only |
 
    Do **not** use mint `#00e0bb`. That is Spaces Please's colour and this
    masthead is deliberately kept separate from it.
 
-7. **Copy.** Google supplies default wording that is compliant but anonymous.
-   Replace the headline and body with:
+5. **Copy.** Google's default is compliant but anonymous. Replace with:
 
    > **Live Laugh Local uses cookies**
    >
    > We and our advertising partners use cookies to show ads and measure how
-   > they perform. Our own visitor counts do not use cookies at all. You can
-   > say no, and you can change your mind at any time from Cookie choices in
-   > the footer.
+   > they perform. Our own visitor counts do not use cookies at all. You can say
+   > no, and you can change your mind at any time from Cookie choices in the
+   > footer.
 
-   Keep Google's own vendor and purpose disclosures underneath it untouched -
-   they are what makes the message certified.
+   Leave Google's vendor and purpose disclosures underneath untouched - they are
+   what makes the message certified.
 
-8. Link **Privacy policy** to `https://livelaughlocal.co.uk/privacy`.
-9. **Publish.** Not "Save". An unpublished message behaves exactly like no
-   message, which is the state the table at the top describes.
+6. Link **Privacy policy** to `https://livelaughlocal.co.uk/privacy`.
+7. **Publish**, not Save. An unpublished message behaves exactly like no message.
 
 ---
 
 ## How to know it worked
 
-Give it up to an hour, then load the site in a private window from a UK
-connection. In order of certainty:
+Once the site status reads **Ready**, load the site in a private window on a UK
+connection:
 
-1. **The banner appears.** If it does not, the message is saved but not
-   published.
-2. **Cookie choices** appears in the footer, under Cookies. That control is
-   already coded and deliberately renders nothing while the CMP is absent, so
-   its appearance is a genuine signal rather than decoration.
-3. Ads begin filling. Slowest to confirm - Auto ads placement takes a while to
-   settle on a new site and low traffic means low fill. Do not judge this on
-   the first day.
-
-To re-run the full diagnostic that produced the table above, the browser probe
-lives in the session scratchpad; the short version is that every row in the
-CONSENT SIDE block should stop saying `UNKNOWN`.
+1. **The banner appears.**
+2. **Cookie choices** appears in the footer under Cookies. That control is
+   already built and deliberately renders nothing while no CMP is present, so
+   its appearance is a real signal rather than decoration.
+3. Ads begin filling. Slowest to confirm; Auto ads placement takes time to
+   settle on a new site and low traffic means low fill. Do not judge it on day
+   one.
 
 ---
 
-## Until it is published
+## Do not touch the ad code during the review
 
-`NEXT_PUBLIC_ADSENSE_PAUSED=true` on the Render service drops the ad script and
-the FCCDCF cookie with it, while keeping the `google-adsense-account`
-verification meta tag and `ads.txt` in place. Nothing is lost in revenue terms
-because nothing is being earned.
+`NEXT_PUBLIC_ADSENSE_PAUSED=true` exists and will drop the ad script (and the
+`FCCDCF` cookie) while keeping the verification meta tag and `ads.txt`.
 
-It is **not** set by default, deliberately. Whether pausing is free depends on
-whether the account is already approved or still under review, and that is only
-visible from inside the dashboard. If a review is in progress, pulling the ad
-code mid-review could fail it. If the account is live, pausing costs nothing.
-That is a one-glance check for the owner and a guess for anyone else, so the
-switch exists and stays off until someone who can see the account decides.
+**Leave it off while the status is "Getting ready".** Google is actively
+checking the site, and part of what it checks is the ad code being present.
+Removing it mid-review is a good way to fail or restart the review, and the
+upside is negligible: `FCCDCF` is Funding Choices' own consent-state cookie, it
+is the only cookie being set, and no advertising or measurement cookies are
+being set at all because nothing is serving. That is a small thing to trade a
+review for.
+
+The switch is there for a decision that only makes sense later - if the site
+goes **Ready** and we still have no published consent message, then the script
+is loading with no prospect of UK revenue and pausing becomes reasonable.

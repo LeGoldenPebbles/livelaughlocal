@@ -297,16 +297,17 @@ Do not spend effort on these, and do not claim they are done.
 1. **Check the indexed count** in Search Console (Pages → Indexed). This is the
    number that matters and nobody else can see it.
 2. **Submit both sitemaps** if not already: `sitemap.xml` and `news-sitemap.xml`.
-3. **Publish the AdSense consent message.** This is the highest-value item on
-   the list and it is 15 minutes of clicking. Measured on the live site on
-   1 Aug 2026: the ad script loads, Auto ads injects a slot, and **zero ads
-   render** - while a 390-day `FCCDCF` cookie is set on every visitor before
-   they touch anything. `__tcfapi` fails and every `googlefc` status reads
-   `UNKNOWN`, which is the signature of an unpublished message. No revenue, and
-   we cookie everyone for it. Publishing switches on the banner and the ads
-   together, because in the UK the first is the precondition for the second.
-   Step by step, with our logo, hex codes and copy already filled in:
-   [docs/ADSENSE_CONSENT.md](docs/ADSENSE_CONSENT.md).
+3. **Check the AdSense consent message is published** - 30 seconds, then 15
+   minutes only if it is not. As of 1 Aug 2026 the site sits in AdSense status
+   **"Getting ready"**, meaning Google is reviewing it and shows no ads at all
+   during that period (a few days, sometimes 2-4 weeks). Zero ads is therefore
+   expected and is NOT evidence of a problem, and the ad code must be left alone
+   until the status reads "Ready". What cannot be seen from outside is whether a
+   GDPR message is published, because a reviewing site shows no banner either
+   way. Worth confirming now rather than after, since without it the review
+   finishing still will not turn on UK revenue. Privacy & messaging → European
+   regulations. Everything else - logo, hex codes, copy, policy URLs - is
+   pre-filled in [docs/ADSENSE_CONSENT.md](docs/ADSENSE_CONSENT.md).
 4. **Create the Facebook page.** The share cards are built and waiting; nothing
    is using them.
 5. **Stripe** → Settings → Emails → tick "Successful payments" so £100 Featured
