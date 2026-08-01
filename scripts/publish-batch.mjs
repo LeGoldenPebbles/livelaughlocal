@@ -239,11 +239,22 @@ async function checkLinks(urls) {
 
 // Second opinion for hosts Node's fetch refuses to talk to. Returns 0 if curl
 // is unavailable or also fails.
+//
+// The null device MUST be platform-correct. execFileSync runs curl.exe with no
+// shell, so "/dev/null" reaches Windows curl as a literal path, curl fails to
+// create \dev\null and exits 23 (write error) for EVERY url. That silently
+// turned this whole fallback into a constant 0, so the thing it was written to
+// prevent - a live page called dead because Node's fetch is fussier than curl -
+// happened anyway. ukcraftfairs.com sends a header Node rejects with
+// HPE_INVALID_HEADER_TOKEN while curl fetches it at 200, and the publish was
+// blocked on it.
+const NULL_DEVICE = process.platform === 'win32' ? 'NUL' : '/dev/null';
+
 function curlStatus(url) {
   try {
     const out = execFileSync(
       'curl',
-      ['-s', '-o', '/dev/null', '-w', '%{http_code}', '-L', '--max-time', '20',
+      ['-s', '-o', NULL_DEVICE, '-w', '%{http_code}', '-L', '--max-time', '20',
        '-A', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
        url],
       { encoding: 'utf8', timeout: 25000, stdio: ['ignore', 'pipe', 'ignore'] }
