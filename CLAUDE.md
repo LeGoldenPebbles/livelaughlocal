@@ -129,7 +129,12 @@ current one (slug is globally unique). Full rules: docs/CONTENT.md.
    script casually.
    **The site is in AdSense status "Getting ready" (under review) as of 1 Aug
    2026, so zero ads render and that is expected** - Google shows no ads during
-   review, which takes a few days to 2-4 weeks. Do NOT read zero fill as a bug,
+   review, which takes a few days to 2-4 weeks. The ads.txt status reading
+   "Not found" is ALSO expected during review and is not a fault: it is a cached
+   verdict from the last crawl, and AdSense refreshes it in proportion to ad
+   request volume, which is zero while under review ("up to a month" per
+   Google). The file is verified correct and reachable by every Google crawler
+   UA. Do not "fix" it. Do NOT read zero fill as a bug,
    and do NOT touch the ad code while it lasts: `NEXT_PUBLIC_ADSENSE_PAUSED=true`
    exists to drop the script and its `FCCDCF` cookie, but removing ad code
    mid-review can fail the review. It stays OFF until the status reads "Ready".

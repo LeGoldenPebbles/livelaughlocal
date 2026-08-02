@@ -160,6 +160,62 @@ connection:
 
 ---
 
+## If the ads.txt status reads "Not found", that is also the review
+
+On 2 Aug 2026 AdSense flipped the ads.txt status from fine to **"Not found"**
+overnight. It cost a full investigation to establish that nothing was wrong, so
+here is the answer in advance for next time.
+
+**The file is fine and Google can reach it.** Verified across 20 paced requests:
+plain GET, HEAD, `If-None-Match` (correct 304), `If-Modified-Since` (correct
+200, no spurious 304), a cache-buster that MISSes to the Render origin, gzip and
+zstd negotiation, the `http://` and `www.` redirects (exactly one hop each, both
+landing on the canonical URL), TLS 1.2 and 1.3, HTTP/1.0 with no user agent, a
+fetch from a non-UK egress, and three probes spanning a full edge-cache cycle.
+Also 200 with the correct body for Googlebot, AdsBot-Google,
+Mediapartners-Google, Google-adstxt, an empty UA and python-requests. The file
+has one commit in its history (`a2a28d5`, 23 Jul) and has never been touched.
+
+**Why it says "Not found" anyway.** Google's wording is *"No ads.txt file was
+found when the site was last crawled."* It is a cached verdict from the last
+crawl, not a live check. And AdSense ties re-crawl latency to ad request volume:
+*"It may take a few days... If your site doesn't make many ad requests it may
+take up to a month."* A site under review serves zero ads, so it makes
+essentially zero ad requests, so the record goes unrefreshed. Publishers report
+this exact flip while approval is pending.
+
+**Do not expect it back in 24-72 hours.** Up to a month is Google's own figure
+for a site in our position. Anchoring on a few days is how someone ends up
+"fixing" a file that is provably correct, mid-review, which is the one genuinely
+harmful thing available here.
+
+**The only action:** AdSense → Sites → click the site → **Check for updates**
+([documented](https://support.google.com/adsense/answer/12171612)). Thirty
+seconds, harmless, correct either way.
+
+### Four explanations that were investigated and are wrong
+
+Recorded because each is plausible enough to be re-invented:
+
+- **The rate-limit rule blocked the crawler.** It is volumetric - 20 requests
+  per 10s keyed on `ip.src` + `cf.colo.id` - and a single ads.txt fetch cannot
+  reach the threshold. A rate-limit block also returns 429, and Google documents
+  429/5xx as *retained for up to five days*; only a **hard 404** purges a
+  record. (The narrow sub-claim that `Google-adstxt` may not be on Cloudflare's
+  verified-bot list is probably true, and still does not matter.)
+- **The 5-minute edge cache rule pinned a bad response.** A deploy blip yields
+  5xx, which is the retained class, not the purging one. Nothing in the app can
+  404 that path: no `middleware.js`, no rewrites or redirects in
+  `next.config.mjs`, no route shadowing `/ads.txt`.
+- **A crawl landed in a Render deploy window.** Render keeps the old instance
+  serving until the new one passes health checks, and destroys the new one on
+  failure. There is no 404 window to land in.
+- **AdSense has the site registered under the old `onrender.com` host.** A
+  static config cannot cause a *transition* from working to broken, and that
+  host serves the identical file anyway, unproxied.
+
+---
+
 ## Do not touch the ad code during the review
 
 `NEXT_PUBLIC_ADSENSE_PAUSED=true` exists and will drop the ad script (and the
