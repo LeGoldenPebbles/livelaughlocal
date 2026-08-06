@@ -166,7 +166,9 @@ function complianceCheck(a, body) {
   }
 
   // Every article needs an image, and the image needs alt text.
-  if (!a.hero?.directUrl) errors.push('no hero image');
+  // `hero.keep` reuses the stored image on a rewrite; either that or a fresh
+  // source URL, but one of them has to be there.
+  if (!a.hero?.directUrl && !a.hero?.keep) errors.push('no hero image');
   if (!a.heroAlt || a.heroAlt.trim().length < 10) errors.push('hero alt text missing or too short');
   if (a.heroAlt && a.heroAlt.length > 160) errors.push(`heroAlt ${a.heroAlt.length} chars, max 160`);
   if (a.hero?.directUrl && !a.hero?.licence) warnings.push('hero has no licence recorded');
@@ -469,8 +471,11 @@ await mongoose.connect(env.MONGODB_URI);
 // slugs in this batch so the batch may cross-link itself.
 const live = await mongoose.connection
   .collection('articles')
-  .find({ status: 'published' }, { projection: { slug: 1, category: 1, title: 1 } })
+  .find({ status: 'published' }, { projection: { slug: 1, category: 1, title: 1, heroImage: 1 } })
   .toArray();
+// Stored hero images, so `"hero": { "keep": true }` can carry one across a
+// rewrite instead of re-uploading an identical picture under a new name.
+const heroBySlug = new Map(live.map((d) => [d.slug, d.heroImage]));
 const valid = new Set([
   ...STATIC_ROUTES,
   ...CATEGORY_SLUGS.map((c) => `/${c}`),
@@ -583,13 +588,29 @@ for (const a of articles) {
     continue;
   }
 
+  // Rewriting the words of an existing article should not churn its picture.
+  // `"hero": { "keep": true }` carries the stored heroImage across untouched,
+  // which matters for two reasons beyond saving an upload: the share card URL
+  // stays stable so anything already shared keeps working, and the rewrite does
+  // not need R2 write credentials at all.
   let hero = null;
-  try {
-    hero = await rehost(a.slug, a.hero?.directUrl);
-  } catch (err) {
-    console.log(`   FAIL ${err.message}`);
-    failed += 1;
-    continue;
+  let keptHero = null;
+  if (a.hero?.keep) {
+    keptHero = heroBySlug.get(a.slug) || null;
+    if (!keptHero?.url) {
+      console.log(`   FAIL hero.keep set but no stored hero image found for ${a.slug}`);
+      failed += 1;
+      continue;
+    }
+    console.log(`   hero kept: ${keptHero.url.slice(0, 72)}`);
+  } else {
+    try {
+      hero = await rehost(a.slug, a.hero?.directUrl);
+    } catch (err) {
+      console.log(`   FAIL ${err.message}`);
+      failed += 1;
+      continue;
+    }
   }
 
   const doc = new Article({
@@ -607,16 +628,29 @@ for (const a of articles) {
     emailConfirmed: false,
     viewCount: 0,
     seo: { metaTitle: a.metaTitle, metaDesc: a.metaDesc },
-    ...(hero
+    ...(keptHero
       ? {
           heroImage: {
-            url: hero.url,
-            alt: a.heroAlt || '',
-            credit: [a.hero?.credit, a.hero?.licence].filter(Boolean).join(', '),
-            ...(hero.social ? { social: hero.social } : {}),
+            url: keptHero.url,
+            // Alt text and credit are words, so a rewrite may legitimately
+            // improve them even when the picture stays.
+            alt: a.heroAlt || keptHero.alt || '',
+            credit: [a.hero?.credit, a.hero?.licence].filter(Boolean).join(', ') || keptHero.credit || '',
+            // Landmine 8: `social` must be carried explicitly or Mongoose drops
+            // it and every share reverts to the wrongly-shaped hero.
+            ...(keptHero.social ? { social: keptHero.social } : {}),
           },
         }
-      : {}),
+      : hero
+        ? {
+            heroImage: {
+              url: hero.url,
+              alt: a.heroAlt || '',
+              credit: [a.hero?.credit, a.hero?.licence].filter(Boolean).join(', '),
+              ...(hero.social ? { social: hero.social } : {}),
+            },
+          }
+        : {}),
     ...(DRAFT ? {} : { publishedAt: new Date() }),
   });
 

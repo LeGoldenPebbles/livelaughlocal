@@ -41,14 +41,91 @@ for (const line of fs.readFileSync(path.join(root, '.env.local'), 'utf8').split(
   if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^"|"$/g, '');
 }
 const FULL = process.argv.includes('--full');
+const SELFTEST = process.argv.includes('--selftest');
 
 // Our owner's marketplace. Citing it is legitimate sourcing for "this event is
 // on", but a piece supported by nothing else has done no independent work.
 const OWN = /spacesplease\.com|livelaughlocal\.co\.uk/i;
 
 // Primary sources: the thing itself rather than someone's report of it.
+//
+// Statutory bodies, regulators and national institutions, by domain.
 const AUTHORITATIVE =
-  /(^|\.)gov\.uk$|legislation\.gov\.uk$|(^|\.)nhs\.uk$|(^|\.)police\.uk$|\.gov$|(^|\.)parliament\.uk$|(^|\.)metoffice\.gov\.uk$|(^|\.)food\.gov\.uk$|(^|\.)nationaltrust\.org\.uk$|(^|\.)english-heritage\.org\.uk$|(^|\.)nationalrail\.co\.uk$|(^|\.)london\.gov\.uk$|councils?\.|(^|\.)org\.uk$/i;
+  /(^|\.)gov\.uk$|legislation\.gov\.uk$|(^|\.)nhs\.uk$|(^|\.)police\.uk$|\.gov$|(^|\.)parliament\.uk$|(^|\.)metoffice\.gov\.uk$|(^|\.)food\.gov\.uk$|(^|\.)nationaltrust\.org\.uk$|(^|\.)english-heritage\.org\.uk$|(^|\.)nationalrail\.co\.uk$|(^|\.)networkrail\.co\.uk$|(^|\.)nationalhighways\.co\.uk$|(^|\.)london\.gov\.uk$|(^|\.)ac\.uk$|councils?\.|(^|\.)org\.uk$/i;
+
+// Words that say nothing about which organisation a domain belongs to, so
+// matching on them would make almost any link look like the subject's own site.
+const GENERIC_TOKENS = new Set([
+  'events', 'event', 'festival', 'festivals', 'market', 'markets', 'fair', 'fairs',
+  'news', 'tickets', 'ticket', 'guide', 'visit', 'what', 'whats', 'best', 'free',
+  'online', 'group', 'ltd', 'club', 'show', 'shows', 'york', 'live', 'local',
+  'summer', 'autumn', 'winter', 'spring', 'christmas', 'halloween', 'about',
+  'uk', 'com', 'co', 'org', 'net', 'www', 'https', 'http',
+]);
+
+/**
+ * Is this domain the subject's OWN site?
+ *
+ * The docstring above has always said a named organiser counts as a primary
+ * source, but the regex could only recognise government. So Network Rail on a
+ * rail closure, Run 4 Wales on its own ballot and a farm's own site on its own
+ * market were all being scored as if the piece had no primary sourcing at all.
+ * That is the wrong way round: the organiser IS the primary source, and a
+ * newspaper's report of the organiser is the secondary one.
+ *
+ * The test is deliberately conservative, and one substring match is NOT enough.
+ * The first version of this accepted any shared word of four characters or
+ * more, which made "dissexpress.co.uk" a primary source for a story set in
+ * Diss: the town name is inside the local newspaper's name. The self-test below
+ * caught it, which is the entire reason the self-test exists.
+ *
+ * So the matched words must account for at least half of the domain itself.
+ * "pulhampatch" is entirely covered by "pulham" and "patch" from the slug, and
+ * is the venue's own site. "dissexpress" is barely a third covered by "diss",
+ * and is a newspaper reporting on it. Generic event vocabulary is excluded
+ * throughout, or every listings site in the country would look primary.
+ */
+function isSubjectsOwnSite(domain, slug) {
+  const host = domain.replace(/^www\./, '').replace(/\.(co\.uk|org\.uk|ac\.uk|gov\.uk|com|org|net|uk|io|events)$/i, '');
+  if (!host) return false;
+  const matched = new Set(
+    slug
+      .split('-')
+      .filter((t) => t.length >= 4 && !GENERIC_TOKENS.has(t))
+      .filter((t) => host.includes(t))
+  );
+  if (!matched.size) return false;
+  const covered = [...matched].reduce((n, t) => n + t.length, 0);
+  return covered / host.length >= 0.5;
+}
+
+if (SELFTEST) {
+  // A loosened check that no longer discriminates is worse than the tight one
+  // it replaced, because it reports the corpus as fine. Prove both directions.
+  const cases = [
+    // [domain, slug, should count as primary?, why]
+    ['pulhampatch.co.uk', 'summer-market-comes-to-the-pulham-patch-near-diss-22-august', true, "the venue's own site"],
+    ['cardiffhalfmarathon.co.uk', 'cardiff-half-2026-sold-out-get-a-place', true, "the event's own site"],
+    ['networkrail.co.uk', 'charing-cross-closure-how-to-get-to-your-london-event', true, 'infrastructure owner'],
+    ['www.gov.uk', 'anything-at-all', true, 'statutory'],
+    ['timeout.com', 'charing-cross-closure-how-to-get-to-your-london-event', false, 'a magazine reporting it'],
+    ['dissexpress.co.uk', 'summer-market-comes-to-the-pulham-patch-near-diss-22-august', false, 'local paper, not the subject'],
+    ['eventbrite.co.uk', 'halloween-2026-uk-tickets-dates-prices-age-limits', false, 'generic ticketing platform'],
+    ['festivalcalendar.uk', 'womad-neston-park-first-public-event', false, 'generic listings site'],
+    ['theartnewspaper.com', 'free-museum-openings-autumn-2026', false, 'trade press, not the museum'],
+    ['bbc.co.uk', 'ghana-party-in-the-park-crowd-surge-barnet', false, 'news report of the event'],
+  ];
+  let bad = 0;
+  console.log('primary-source detection self-test\n');
+  for (const [domain, slug, want, why] of cases) {
+    const got = AUTHORITATIVE.test(domain) || isSubjectsOwnSite(domain, slug);
+    const ok = got === want;
+    if (!ok) bad += 1;
+    console.log(`  ${ok ? 'ok  ' : 'FAIL'}  ${String(got).padEnd(5)} (want ${String(want).padEnd(5)}) ${domain.padEnd(28)} ${why}`);
+  }
+  console.log(`\n${bad ? `${bad} case(s) wrong - do not trust the auth column` : 'all cases correct'}`);
+  process.exit(bad ? 1 : 0);
+}
 
 const text = (h) => String(h).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
@@ -84,7 +161,7 @@ const scored = rows.map((a) => {
   const hrefs = [...body.matchAll(/href="(https?:\/\/[^"]+)"/g)].map((m) => m[1]);
   const domains = [...new Set(hrefs.map((h) => { try { return new URL(h).hostname.replace(/^www\./, ''); } catch { return null; } }).filter(Boolean))];
   const external = domains.filter((d) => !OWN.test(d));
-  const authoritative = external.filter((d) => AUTHORITATIVE.test(d));
+  const authoritative = external.filter((d) => AUTHORITATIVE.test(d) || isSubjectsOwnSite(d, a.slug));
 
   const prices = (plain.match(/£\d/g) || []).length;
   const dates = (plain.match(/\b\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\b/gi) || []).length;
