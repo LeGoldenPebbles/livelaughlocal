@@ -33,7 +33,8 @@ import sharp from 'sharp';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { sanitizeBody } from '../lib/sanitize.js';
 import { CATEGORY_SLUGS } from '../lib/constants.js';
-import { checkQuote, normaliseText, stripHtml } from '../lib/quoteCheck.js';
+import os from 'node:os';
+import { checkQuote, normaliseText, stripHtml, pdfToText } from '../lib/quoteCheck.js';
 
 const here = path.dirname(url.fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
@@ -41,10 +42,13 @@ const root = path.join(here, '..');
 const DRY = process.argv.includes('--dry');
 const DRAFT = process.argv.includes('--draft');
 const CHECK_LINKS = process.argv.includes('--check-links');
+// Rewrite an article that already exists, rather than skipping it. Required to
+// fix thin content in place without abandoning an indexed URL.
+const UPDATE = process.argv.includes('--update');
 const input = process.argv[2];
 if (!input || input.startsWith('--')) {
   console.error(
-    'usage: node scripts/publish-batch.mjs <articles.json> [--dry] [--draft] [--check-links]'
+    'usage: node scripts/publish-batch.mjs <articles.json> [--dry] [--draft] [--check-links] [--update]'
   );
   process.exit(1);
 }
@@ -225,8 +229,26 @@ async function loadSourceText(u) {
       },
       signal: AbortSignal.timeout(25000),
     });
-    if (res.ok) out = { ok: true, text: ` ${normaliseText(stripHtml(await res.text()))} `, why: '' };
-    else out.why = `HTTP ${res.status}`;
+    if (res.ok) {
+      // Council committee papers, budgets and pitch-fee schedules are PDFs, and
+      // they are the best primary sources a local story has. Treating them as
+      // unreadable would report a sound council quotation as fabricated and
+      // train writers away from the strongest sourcing available to them.
+      if (/pdf/i.test(res.headers.get('content-type') || '')) {
+        const tmp = path.join(os.tmpdir(), `lll-src-${crypto.createHash('sha1').update(u).digest('hex').slice(0, 16)}.pdf`);
+        try {
+          fs.writeFileSync(tmp, Buffer.from(await res.arrayBuffer()));
+          const t = await pdfToText(tmp);
+          out = t
+            ? { ok: true, text: ` ${normaliseText(t)} `, why: '' }
+            : { ok: false, text: '', why: 'PDF text could not be extracted' };
+        } finally {
+          try { fs.unlinkSync(tmp); } catch { /* best effort */ }
+        }
+      } else {
+        out = { ok: true, text: ` ${normaliseText(stripHtml(await res.text()))} `, why: '' };
+      }
+    } else out.why = `HTTP ${res.status}`;
   } catch (err) {
     out.why = String(err.message || err).slice(0, 60);
   }
@@ -483,7 +505,11 @@ for (const a of articles) {
   // applications..."), which would sail through and publish the same article
   // twice. That is textbook scaled-content abuse, self-inflicted.
   const overlap = live
-    .filter((d) => d.category === a.category)
+    // An article is never a duplicate of itself. Re-publishing the same slug is
+    // an UPDATE, which is how a weak piece gets rewritten in place, and without
+    // this the guard makes the documented tool unusable for the exact job of
+    // fixing thin content that AdSense objected to.
+    .filter((d) => d.category === a.category && d.slug !== a.slug)
     .map((d) => {
       const mine = new Set(titleWords(a.title));
       const theirs = titleWords(d.title || '');
@@ -620,8 +646,32 @@ if (DRY) {
 
 for (const doc of prepared) {
   const existing = await Article.findOne({ slug: doc.slug });
+  if (existing && !UPDATE) {
+    console.log(`SKIP (slug exists): ${doc.slug}  [use --update to rewrite it]`);
+    continue;
+  }
   if (existing) {
-    console.log(`SKIP (slug exists): ${doc.slug}`);
+    // Rewriting a published article in place. This is how a thin piece gets
+    // fixed, and the alternative - a new slug - abandons an indexed URL and
+    // leaves the weak page live, which is the opposite of the goal.
+    //
+    // publishedAt is deliberately NOT touched. Correcting or deepening an
+    // article is not new information, and re-dating for freshness is exactly
+    // the manipulation Google's policies name. Views and the original byline
+    // stay with the URL too.
+    const keep = ['publishedAt', 'viewCount', 'createdAt', 'origin', 'author', 'status'];
+    const patch = {};
+    for (const [k, v] of Object.entries(doc.toObject())) {
+      if (k === '_id' || k === '__v' || keep.includes(k)) continue;
+      patch[k] = v;
+    }
+    // Validate the merged result against the real model before writing, so an
+    // update cannot do what a schemaless insert once did: pass here and then
+    // break the admin's re-save later.
+    existing.set(patch);
+    await existing.validate();
+    await existing.save();
+    console.log(`UPDATED: /${existing.category}/${existing.slug}  (publishedAt and views preserved)`);
     continue;
   }
   await doc.save();

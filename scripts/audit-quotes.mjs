@@ -31,7 +31,7 @@ import path from 'node:path';
 import url from 'node:url';
 import { execFile } from 'node:child_process';
 import mongoose from 'mongoose';
-import { normaliseText as norm, stripHtml, checkQuote as checkQuoteShared, STRONG_RUN, WEAK_RUN } from '../lib/quoteCheck.js';
+import { normaliseText as norm, stripHtml, checkQuote as checkQuoteShared, pdfToText } from '../lib/quoteCheck.js';
 
 const root = path.join(path.dirname(url.fileURLToPath(import.meta.url)), '..');
 for (const line of fs.readFileSync(path.join(root, '.env.local'), 'utf8').split(/\r?\n/)) {
@@ -77,14 +77,39 @@ function curlText(u) {
   });
 }
 
+/** Council committee papers are PDFs. Fetch, extract, cache the text. */
+async function pdfText(u) {
+  const os = await import('node:os');
+  const tmp = path.join(os.tmpdir(), `lll-quote-${Buffer.from(u).toString('hex').slice(0, 24)}.pdf`);
+  try {
+    const res = await fetch(u, { headers: { 'user-agent': UA }, redirect: 'follow' });
+    if (!res.ok) return null;
+    fs.writeFileSync(tmp, Buffer.from(await res.arrayBuffer()));
+    const text = await pdfToText(tmp);
+    return text;
+  } catch {
+    return null;
+  } finally {
+    try { fs.unlinkSync(tmp); } catch { /* best effort */ }
+  }
+}
+
 async function fetchText(u) {
   if (cache.has(u)) return cache.get(u);
   let out = { ok: false, text: '', why: '' };
   try {
     const res = await fetch(u, { headers: { 'user-agent': UA, accept: 'text/html,*/*' }, redirect: 'follow' });
     if (res.ok) {
-      const html = await res.text();
-      out = { ok: true, text: ' ' + norm(stripHtml(html)) + ' ', why: '' };
+      const ctype = res.headers.get('content-type') || '';
+      if (/pdf/i.test(ctype)) {
+        const text = await pdfText(u);
+        out = text
+          ? { ok: true, text: ' ' + norm(text) + ' ', why: '' }
+          : { ok: false, text: '', why: 'PDF text could not be extracted' };
+      } else {
+        const html = await res.text();
+        out = { ok: true, text: ' ' + norm(stripHtml(html)) + ' ', why: '' };
+      }
     } else {
       out.why = `HTTP ${res.status}`;
     }
