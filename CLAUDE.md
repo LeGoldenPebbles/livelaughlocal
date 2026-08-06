@@ -179,6 +179,21 @@ node scripts/publish-batch.mjs <articles.json> --dry --check-links
 node scripts/publish-batch.mjs <articles.json> --check-links
 ```
 
+**`--check-links` is not optional.** It is what runs the quote gate
+(`lib/quoteCheck.js`), which refuses to publish any blockquote whose words do
+not appear verbatim at a source the article itself links to. This exists because
+on 6 August 2026 a quote attributed to a named CMA executive reached a final
+draft having been invented by a research summariser that paraphrased her and
+then presented the paraphrase as a quotation. Fabricating words and attributing
+them to a real person is the one error here that cannot be walked back.
+`node scripts/audit-quotes.mjs` checks everything already published;
+`--selftest` proves the check still discriminates before you trust it.
+
+**AdSense refused the site for "Low value content" on 6 Aug 2026**, with 43
+articles live, so it was never about page count. Adding pages does not fix a
+thin page. See section 2b of the journalist-article skill for what thin looks
+like in our own corpus and what to do instead.
+
 Three things that are widely believed and are NOT true, so nobody wastes a day
 on them again: you **cannot** submit this site to Google News (that flow was
 deleted in April 2024, inclusion is automatic); AI-assisted writing is **not** a

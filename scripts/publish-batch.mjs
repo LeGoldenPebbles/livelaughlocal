@@ -33,6 +33,7 @@ import sharp from 'sharp';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { sanitizeBody } from '../lib/sanitize.js';
 import { CATEGORY_SLUGS } from '../lib/constants.js';
+import { checkQuote, normaliseText, stripHtml } from '../lib/quoteCheck.js';
 
 const here = path.dirname(url.fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
@@ -200,6 +201,53 @@ function complianceCheck(a, body) {
 // Museum returns 405 to an automated GET on a page that loads perfectly in a
 // browser, and Cloudflare-fronted sites routinely return 403.
 const BOT_BLOCKED = new Set([401, 403, 405, 429, 503, 999]);
+
+/**
+ * Fetch a cited page as normalised text, so quotes can be checked against it.
+ * Cached per run: the same source usually backs several quotes in one article.
+ *
+ * curl gets --fail deliberately. Without it curl exits 0 on a 403 and hands
+ * back the error page, which reads as "source loaded, quote absent" and turns
+ * a correct quotation into a confident accusation of fabrication.
+ */
+const sourceTextCache = new Map();
+async function loadSourceText(u) {
+  if (sourceTextCache.has(u)) return sourceTextCache.get(u);
+  let out = { ok: false, text: '', why: '' };
+  try {
+    const res = await fetch(u, {
+      redirect: 'follow',
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,*/*',
+        'Accept-Language': 'en-GB,en;q=0.9',
+      },
+      signal: AbortSignal.timeout(25000),
+    });
+    if (res.ok) out = { ok: true, text: ` ${normaliseText(stripHtml(await res.text()))} `, why: '' };
+    else out.why = `HTTP ${res.status}`;
+  } catch (err) {
+    out.why = String(err.message || err).slice(0, 60);
+  }
+  if (!out.ok) {
+    try {
+      const html = execFileSync(
+        'curl',
+        ['-s', '--fail', '-L', '--max-time', '30', '-A',
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          '-H', 'Accept: text/html,application/xhtml+xml,*/*', u],
+        { encoding: 'utf8', maxBuffer: 40 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] }
+      );
+      if (html && html.length > 200) out = { ok: true, text: ` ${normaliseText(stripHtml(html))} `, why: '' };
+      else out.why += ' (curl empty)';
+    } catch {
+      out.why += ' (curl also failed)';
+    }
+  }
+  sourceTextCache.set(u, out);
+  return out;
+}
 
 async function checkLinks(urls) {
   const dead = [];
@@ -466,6 +514,36 @@ for (const a of articles) {
       console.log(
         `   OK ${external.length - blocked.length}/${external.length} outbound link(s) verified`
       );
+    }
+
+    // Every quotation must actually exist at a source this article cites.
+    // This is the most important check in the file. A wrong word count is
+    // cosmetic; inventing words and attributing them to a named, real person
+    // is the one error that cannot be walked back, and it very nearly shipped
+    // on 6 August 2026 from a research summary that paraphrased a CMA
+    // executive and presented the paraphrase as a quotation.
+    const quoted = [...body.matchAll(/<blockquote>([\s\S]*?)<\/blockquote>/g)].map((m) =>
+      stripHtml(m[1])
+    );
+    if (quoted.length && external.length) {
+      let unresolved = 0;
+      for (const q of quoted) {
+        const r = await checkQuote(q, external, loadSourceText);
+        const short = q.replace(/\s+/g, ' ').trim().slice(0, 80);
+        if (r.verdict === 'FAIL') {
+          errors.push(`quote not found at any cited source (${r.detail}): "${short}"`);
+        } else if (r.verdict === 'WEAK') {
+          errors.push(`quote only partly matches its source (${r.detail}): "${short}"`);
+        } else if (r.verdict === 'UNCHECKED') {
+          unresolved += 1;
+          console.log(`   note quote UNVERIFIED, source unreadable: "${short}"`);
+          console.log(`        ${r.detail}`);
+        }
+      }
+      const ok = quoted.length - unresolved - errors.filter((e) => e.startsWith('quote')).length;
+      console.log(`   OK ${ok}/${quoted.length} quote(s) found verbatim at a cited source`);
+    } else if (quoted.length) {
+      errors.push(`${quoted.length} quote(s) but no outbound sources to verify them against`);
     }
   }
   if (errors.length) {

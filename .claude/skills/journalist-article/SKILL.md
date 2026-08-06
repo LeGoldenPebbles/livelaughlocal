@@ -111,6 +111,23 @@ publish at all. Both would have been published as fact.
 **Search finds the page. The page is the source.** Never write a number from a
 search summary.
 
+**Never take a quotation from a summary. Not once, not for a moment.** This is
+the specific rule the rest of the guide is built around, because it is the one
+that nearly went wrong. On 6 August 2026 a research pass reported that Emma
+Cochrane, Executive Director of Consumer Protection at the CMA, had said "Fans
+deserve to know exactly what they're paying upfront, without nasty surprises at
+the checkout." It is a plausible sentence. She never said it. The summariser had
+paraphrased her real words and the paraphrase was then handled as a quotation.
+It reached a final draft and was caught only because someone opened the CMA page
+to check.
+
+A wrong price is a correction. Inventing words and attributing them to a named,
+living person is not a correction, it is a fabricated quote in a publication
+with a real company behind it, and no amount of editing afterwards undoes it.
+So: open the page, find the words, copy them from the page. If you cannot find
+them there, you do not have a quote, and the honest move is to write the piece
+without one rather than to approximate.
+
 **A 403 is not a dead end.** Kew, Longleat, Birmingham City Council and the
 Financial Ombudsman all refuse the fetch tool and return a clean 200 to curl:
 
@@ -126,6 +143,47 @@ Search for the real one, then open it. The same rule that applies to internal
 links applies to your sources.
 
 ---
+
+## 2b. What "low value content" means, and how to not write it
+
+On 6 August 2026 Google AdSense refused the site for **Low value content**. The
+site had 43 articles at the time, so this was never about how many pages exist.
+It is about what is on the page.
+
+The natural reaction is to write more. That is the wrong lever. A thin page is
+not fixed by a new page next to it, and ten new pages in a day is itself the
+pattern that scaled-content enforcement looks for. What clears the verdict is
+removing the thin pages and making the rest obviously worth reading.
+
+**What a thin page looks like here**, using our own worst example. The Saxilby
+fun day piece ran about 670 words on roughly 60 words of actual fact, restated
+the same detail three times to reach length, and never named the organiser,
+which is a parish council that publishes pitch prices and booking numbers on its
+own website. Every one of those is a choice a writer made.
+
+The test to apply before writing a word: **what does this page contain that a
+reader cannot get from the event listing it is based on?** If the honest answer
+is "nothing, but longer", do not write it. Either find the extra material,
+usually the organiser, the council, the trade body, the price list, or write a
+250-word listing and accept that it is a listing. Padding a thin fact to hit a
+word count is the exact failure mode being penalised.
+
+**What makes a page substantial**, in rough order of how much it counts:
+
+- **Primary sources, linked.** Not news coverage of a source, the source. A
+  gov.uk page, a statutory instrument, a council report, an organiser's own
+  price list. The Martyn's Law piece rests on 22 verified claims from
+  legislation.gov.uk and gov.uk. That page is very hard to call thin.
+- **Something the reader could not have worked out.** A number nobody has put
+  together, a rule everyone gets wrong, a comparison across venues.
+- **Real quotations from named people with real job titles.**
+- **A correction of a common belief**, where you can show the belief is wrong.
+- **Specifics throughout**: named towns, venues, dates written in full, prices
+  with the pound sign, deadlines.
+
+And the inverse. Do not pad. Do not restate the dek in the first paragraph. Do
+not write a section that only rephrases the one above it. If the piece will not
+honestly reach 700 words, the commission was wrong, not the writer.
 
 ## 3. What has to be in it
 
@@ -331,6 +389,11 @@ including the softer warnings, in [references/contract.md](references/contract.m
 | Outbound links | must not 404 |
 | Spaces Please | homepage linked at most once |
 | Title similarity | under 50% word overlap with a published piece in the same category |
+| **Every quotation** | **must appear verbatim at a source the article itself links to** |
+
+That last row is new, it runs under `--check-links`, and it is the only check
+here that exists because of a near miss rather than a style preference. See
+below.
 
 **There is no short-listing exemption.** The documented carve-out for pieces under
 700 words cannot apply, because 700 words is also the floor for publishing at all.
@@ -364,7 +427,47 @@ node scripts/publish-batch.mjs <articles.json> --dry --check-links   # prove it 
 node scripts/publish-batch.mjs <articles.json> --check-links         # publish
 node scripts/publish-batch.mjs <articles.json> --draft               # queue for review
 node scripts/audit-corpus.mjs                                        # read-only, whole corpus
+node scripts/audit-quotes.mjs                                        # every published quote
+node scripts/audit-stale.mjs --soon 40                               # what has gone out of date
 ```
+
+**Always pass `--check-links`.** It is not just a link check any more: it is
+what runs the quote gate. Publishing without it skips the most important
+validation in the pipeline.
+
+### The quote gate, and its four verdicts
+
+`lib/quoteCheck.js` normalises each blockquote and every page the article links
+to, then looks for the longest run of consecutive quoted words appearing
+verbatim in one of those pages. A real quotation lands a long run. A paraphrase
+does not.
+
+| | |
+|---|---|
+| **PASS** | the words are on a page the article cites |
+| **WEAK** | partial match. Usually a stitched or over-trimmed quote. Blocks the publish |
+| **FAIL** | every cited page was read and the words are in none of them. Treat as fabricated |
+| **UNCHECKED** | the source could not be read. Reported, never fatal, and never a pass |
+
+`UNCHECKED` is deliberate. Some sites refuse every robot: womad.co.uk 403s even
+a browser user agent. Blocking on that would mean deleting correct quotes to
+satisfy a script, which is worse than the problem. When you see it, open the
+page yourself.
+
+Two things about the gate are worth knowing because both were bugs first. It
+falls back to `curl --fail` where Node's fetch gets a 403, which is how IQ
+Magazine quotes verify at all. And `--fail` is load-bearing: without it curl
+returns the 403 error page with exit 0, the checker reads that as "source
+loaded, quote absent", and a correct quotation gets reported as invented.
+
+Prove it still works before you trust it:
+
+```bash
+node scripts/audit-quotes.mjs --selftest
+```
+
+That feeds it a real quote, a fabricated one, a real quote behind a 403, and a
+real quote whose host does not exist, and requires it to tell all four apart.
 
 Never hand-roll an insert. A schemaless write skips Mongoose validation, and the
 admin re-saves through the real model, so an over-length field publishes fine and
