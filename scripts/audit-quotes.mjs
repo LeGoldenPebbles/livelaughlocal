@@ -31,7 +31,7 @@ import path from 'node:path';
 import url from 'node:url';
 import { execFile } from 'node:child_process';
 import mongoose from 'mongoose';
-import { normaliseText as norm, stripHtml, checkQuote as checkQuoteShared, pdfToText } from '../lib/quoteCheck.js';
+import { normaliseText as norm, stripHtml, checkQuote as checkQuoteShared, pdfToText, isUsableText } from '../lib/quoteCheck.js';
 
 const root = path.join(path.dirname(url.fileURLToPath(import.meta.url)), '..');
 for (const line of fs.readFileSync(path.join(root, '.env.local'), 'utf8').split(/\r?\n/)) {
@@ -108,7 +108,10 @@ async function fetchText(u) {
           : { ok: false, text: '', why: 'PDF text could not be extracted' };
       } else {
         const html = await res.text();
-        out = { ok: true, text: ' ' + norm(stripHtml(html)) + ' ', why: '' };
+        const txt = norm(stripHtml(html));
+        out = isUsableText(txt)
+          ? { ok: true, text: ' ' + txt + ' ', why: '' }
+          : { ok: false, text: '', why: `HTTP ${res.status} but only ${txt.length} chars of text` };
       }
     } else {
       out.why = `HTTP ${res.status}`;
@@ -119,8 +122,9 @@ async function fetchText(u) {
 
   if (!out.ok) {
     const html = await curlText(u);
-    if (html) out = { ok: true, text: ' ' + norm(stripHtml(html)) + ' ', why: '' };
-    else out.why += ' (curl also failed)';
+    const txt = html ? norm(stripHtml(html)) : '';
+    if (isUsableText(txt)) out = { ok: true, text: ' ' + txt + ' ', why: '' };
+    else out.why += html ? ' (curl returned too little text)' : ' (curl also failed)';
   }
 
   cache.set(u, out);

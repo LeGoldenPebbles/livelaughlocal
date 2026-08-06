@@ -34,7 +34,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { sanitizeBody } from '../lib/sanitize.js';
 import { CATEGORY_SLUGS } from '../lib/constants.js';
 import os from 'node:os';
-import { checkQuote, normaliseText, stripHtml, pdfToText } from '../lib/quoteCheck.js';
+import { checkQuote, normaliseText, stripHtml, pdfToText, isUsableText } from '../lib/quoteCheck.js';
 
 const here = path.dirname(url.fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
@@ -246,7 +246,10 @@ async function loadSourceText(u) {
           try { fs.unlinkSync(tmp); } catch { /* best effort */ }
         }
       } else {
-        out = { ok: true, text: ` ${normaliseText(stripHtml(await res.text()))} `, why: '' };
+        const txt = normaliseText(stripHtml(await res.text()));
+        out = isUsableText(txt)
+          ? { ok: true, text: ` ${txt} `, why: '' }
+          : { ok: false, text: '', why: `HTTP ${res.status} but only ${txt.length} chars of text` };
       }
     } else out.why = `HTTP ${res.status}`;
   } catch (err) {
@@ -261,8 +264,9 @@ async function loadSourceText(u) {
           '-H', 'Accept: text/html,application/xhtml+xml,*/*', u],
         { encoding: 'utf8', maxBuffer: 40 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] }
       );
-      if (html && html.length > 200) out = { ok: true, text: ` ${normaliseText(stripHtml(html))} `, why: '' };
-      else out.why += ' (curl empty)';
+      const txt = html ? normaliseText(stripHtml(html)) : '';
+      if (isUsableText(txt)) out = { ok: true, text: ` ${txt} `, why: '' };
+      else out.why += ' (curl returned too little text)';
     } catch {
       out.why += ' (curl also failed)';
     }
