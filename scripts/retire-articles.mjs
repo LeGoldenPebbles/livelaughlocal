@@ -80,6 +80,31 @@ for (const r of RETIRE) {
 if (missing) { console.log(`\nABORTED: ${missing} slug(s) not found. Nothing written.`); await mongoose.disconnect(); process.exit(1); }
 if (!staged.length) { console.log('\nnothing to do.'); await mongoose.disconnect(); process.exit(0); }
 
+// Retiring an article breaks every internal link pointing at it, and the
+// publisher only checks internal links at publish time, so nothing catches it
+// afterwards. This is not hypothetical: retiring two roundups on 6 August 2026
+// left the pumpkin patch article linking to a 404, and it was found by
+// audit-corpus a step later rather than here, where it belonged.
+const live = await col
+  .find({ status: 'published' }, { projection: { slug: 1, category: 1, bodyHtml: 1 } })
+  .toArray();
+const inbound = [];
+for (const doc of staged) {
+  for (const other of live) {
+    if (other.slug === doc.slug) continue;
+    if (String(other.bodyHtml || '').includes(`/${doc.slug}"`)) {
+      inbound.push({ from: `/${other.category}/${other.slug}`, to: `/${doc.category}/${doc.slug}` });
+    }
+  }
+}
+if (inbound.length) {
+  console.log(`\nABORTED: ${inbound.length} published article(s) link to what you are retiring.`);
+  for (const i of inbound) console.log(`   ${i.from}\n      links to ${i.to}`);
+  console.log('\nRepoint those links first, usually at the category page. Nothing written.');
+  await mongoose.disconnect();
+  process.exit(1);
+}
+
 console.log(`\n${staged.length} article(s) would 404 and leave the sitemap, feeds and category pages.`);
 if (DRY) { console.log('[dry] nothing written.'); await mongoose.disconnect(); process.exit(0); }
 
