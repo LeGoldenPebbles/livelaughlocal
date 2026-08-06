@@ -175,6 +175,8 @@ Publish ONLY via the validating publisher, which enforces the mechanical half
 and refuses to write if anything fails:
 
 ```bash
+node scripts/show-article.mjs <slug>              # read one as stored
+node scripts/patch-article.mjs <patches.json> <out.json>   # surgical edit, then publish out.json
 node scripts/publish-batch.mjs <articles.json> --dry --check-links
 node scripts/publish-batch.mjs <articles.json> --check-links
 ```
@@ -211,6 +213,16 @@ npm run seed    # seed articles/house ads
 ```
 
 ## Environment
+
+**The same secret lives in two places and can drift.** R2 credentials are used
+by `publish-batch.mjs` from `.env.local` AND by the running app from the Render
+environment, so rotating one side leaves the other on the old key. It fails
+silently, because nothing touches R2 until somebody uploads an image.
+`node scripts/check-r2.mjs --render` proves both pairs against the real bucket
+and names which one is broken. As of 6 Aug 2026 the two pairs DIFFER and BOTH
+still work, meaning an earlier rotation was never completed: the old key was
+never revoked. Move Render onto the new pair first, verify, then revoke the old
+one in Cloudflare - revoking first takes the live site's uploads down.
 
 See `.env.example` for the full annotated list. Secrets live in `.env.local`
 (gitignored) and in Render service env vars. NEVER commit secrets - no
@@ -277,6 +289,12 @@ See `.env.example` for the full annotated list. Secrets live in `.env.local`
    against the ceiling, recent OOM kills, staircase detection, and live traffic
    attributed by agent AND by network block. Pull it DURING an incident, since
    Render keeps logs about an hour (landmine 11).
+   **The staircase verdict judges only the RECENT HALF of the window since the
+   last restart, deliberately.** Memory always climbs for the first hour after a
+   deploy on its way to a normal working set, and reading that ramp as a leak is
+   how this script twice called a healthy service a staircase. Run
+   `--selftest` before trusting it; it feeds six known series through, including
+   the real 28 July kill and the flat 6 Aug data it got wrong.
 7. **Page-level `alternates` REPLACES the layout's, it does not merge.** We set a
    canonical on every route, so a feed-autodiscovery link declared through the
    metadata API disappears from every page. It is rendered as a `<link>` in
