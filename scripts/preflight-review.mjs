@@ -110,8 +110,35 @@ for (const p of internal) {
 console.log(`3. internal links resolving          : ${internal.size - dead}/${internal.size}`);
 
 // 4. Indexability.
+//
+// robots.txt MUST be parsed per user-agent group. A naive regex that looks for
+// "User-agent: *" and then any later "Disallow: /" spans across groups, so
+// blocking one AI crawler at the bottom of the file reads as blocking the whole
+// site. That false positive would stop an AdSense resubmission for no reason,
+// and it is the second time this exact mistake has been made in this repo.
 const robots = await get('/robots.txt');
-const blocksAll = /User-agent:\s*\*[\s\S]*?Disallow:\s*\/\s*$/im.test(robots.body);
+function disallowsEverything(txt, agent) {
+  const lines = String(txt).split(/\r?\n/).map((l) => l.trim());
+  let inGroup = false;
+  let sawGroupStart = false;
+  for (const line of lines) {
+    const ua = line.match(/^User-agent:\s*(.+)$/i);
+    if (ua) {
+      // Consecutive User-agent lines share one group of rules.
+      if (!sawGroupStart) inGroup = false;
+      sawGroupStart = true;
+      if (ua[1].trim().toLowerCase() === agent.toLowerCase()) inGroup = true;
+      continue;
+    }
+    if (!line || line.startsWith('#')) continue;
+    sawGroupStart = false;
+    if (!inGroup) continue;
+    const dis = line.match(/^Disallow:\s*(.*)$/i);
+    if (dis && dis[1].trim() === '/') return true;
+  }
+  return false;
+}
+const blocksAll = disallowsEverything(robots.body, '*') || disallowsEverything(robots.body, 'Googlebot');
 const home = await get('/');
 const noindex = /<meta[^>]+name="robots"[^>]+content="[^"]*noindex/i.test(home.body);
 console.log(`4. robots.txt allows crawling        : ${blocksAll ? 'NO  <-- BLOCKED' : 'yes'}`);
