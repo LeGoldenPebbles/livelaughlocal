@@ -76,9 +76,29 @@ if (!pts.length) {
   const first = a[0].v;
   console.log(`\n  now ${cur.v}MB (${Math.round((cur.v / LIMIT_MB) * 100)}%)  peak ${peak}MB  6h ago ${first}MB`);
   // A staircase is the signature: climbing without ever falling back.
-  const falls = a.filter((p, i) => i && p.v < a[i - 1].v - 15).length;
-  if (cur.v > first + 60 && falls <= 2) {
-    console.log('  SHAPE: staircase. Climbing and not releasing. This is how the last four kills looked.');
+  //
+  // Only analyse since the last RESTART, or this cries wolf every time. A
+  // restart drops memory to near zero and the climb back to a normal working
+  // set always looks like a staircase, which is how the first version of this
+  // reported a healthy service four minutes after a deploy.
+  let start = 0;
+  for (let i = 1; i < a.length; i += 1) {
+    if (a[i].v < a[i - 1].v * 0.6) start = i; // a drop that big is a restart
+  }
+  const seg = a.slice(start);
+  const mins = seg.length; // one point per minute
+  if (start > 0) console.log(`  (restarted at ${a[start].t}; shape measured over the ${mins} minutes since)`);
+
+  if (mins < 45) {
+    console.log('  SHAPE: too soon to say. A working set climbs for the first hour after a restart.');
+  } else {
+    const falls = seg.filter((p, i) => i && p.v < seg[i - 1].v - 15).length;
+    if (seg[seg.length - 1].v > seg[0].v + 60 && falls <= 2) {
+      console.log('  SHAPE: staircase. Climbing and not releasing. This is how the previous kills looked.');
+      console.log('         Run with --who. Last time it was one crawler taking 94% of traffic.');
+    } else {
+      console.log('  SHAPE: healthy. Memory is rising and falling rather than only rising.');
+    }
   }
 }
 
