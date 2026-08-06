@@ -251,10 +251,32 @@ See `.env.example` for the full annotated list. Secrets live in `.env.local`
 6. **Node does not know it is in a 512MB container.** V8 sizes its heap from the
    HOST machine, never feels memory pressure, and the container OOM-kills it
    first. This killed the service twice (26 and 28 July 2026), the second time
-   after a clean 16-hour staircase from 114MB to 511MB. Fixed with the Render
-   env var `NODE_OPTIONS=--max-old-space-size=300`. **Set this again on any new
-   service or plan change.** The image-rehosting work reduced the slope but was
-   never the root cause.
+   after a clean 16-hour staircase from 114MB to 511MB. Mitigated with the
+   Render env var `NODE_OPTIONS=--max-old-space-size=300`. **Set this again on
+   any new service or plan change.**
+   **That flag is NOT sufficient, and three more kills proved it** (4 Aug 03:56,
+   4 Aug 23:57, 6 Aug 18:29), all with the cap correctly set. It bounds V8's old
+   space ONLY. On 6 Aug RSS peaked at 460MB against a 300MB cap, so ~160MB was
+   outside the JS heap: **sharp's native buffers inside the Next image
+   optimiser**, which no `--max-old-space-size` value can see. Lowering the cap
+   does not help; not doing the work does.
+   **The 6 Aug cause was `meta-externalagent`, Meta's AI training crawler** - 73
+   of 78 requests in half an hour, from 57 addresses inside
+   `2a03:2880:f812::/48`, i.e. 94% of all traffic. Two reasons nothing caught
+   it: the Cloudflare rate limit keys on `ip.src` and a fleet spread across a
+   /48 never trips it, and the UA opens with an ordinary Chrome string and only
+   names itself at the very end, so start-of-string matching sees a browser.
+   Now blocked in **`middleware.js`** (403 before any render or image
+   optimisation, `/_next/image` deliberately inside the matcher) and in
+   robots.txt. Middleware exists because robots.txt is voluntary AND cached by
+   the crawler for hours, so it does nothing on the night it is needed.
+   **Never add `facebookexternalhit`, `AdsBot-Google` or any `Googlebot` to that
+   block list** - share cards and the AdSense review depend on them. The list is
+   fail-tested per agent on both the page and the image path.
+   Diagnose with `node scripts/check-memory.mjs --who`: six-hour memory chart
+   against the ceiling, recent OOM kills, staircase detection, and live traffic
+   attributed by agent AND by network block. Pull it DURING an incident, since
+   Render keeps logs about an hour (landmine 11).
 7. **Page-level `alternates` REPLACES the layout's, it does not merge.** We set a
    canonical on every route, so a feed-autodiscovery link declared through the
    metadata API disappears from every page. It is rendered as a `<link>` in
